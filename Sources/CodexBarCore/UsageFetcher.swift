@@ -207,11 +207,11 @@ public enum UsageError: LocalizedError, Sendable {
     public var errorDescription: String? {
         switch self {
         case .noSessions:
-            "No Codex sessions found yet. Run at least one Codex prompt first."
+            NSLocalizedString("No Codex sessions found yet. Run at least one Codex prompt first.", comment: "")
         case .noRateLimitsFound:
-            "Found sessions, but no rate limit events yet."
+            NSLocalizedString("Found sessions, but no rate limit events yet.", comment: "")
         case .decodeFailed:
-            "Could not parse Codex session log."
+            NSLocalizedString("Could not parse Codex session log.", comment: "")
         }
     }
 }

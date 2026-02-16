@@ -10,7 +10,7 @@ struct ZaiProviderImplementation: ProviderImplementation {
 
     @MainActor
     func presentation(context _: ProviderPresentationContext) -> ProviderPresentation {
-        ProviderPresentation { _ in "api" }
+        ProviderPresentation { _ in L10n.tr("api") }
     }
 
     @MainActor

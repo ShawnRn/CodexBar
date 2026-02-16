@@ -11,7 +11,7 @@ struct CodexProviderImplementation: ProviderImplementation {
     @MainActor
     func presentation(context _: ProviderPresentationContext) -> ProviderPresentation {
         ProviderPresentation { context in
-            context.store.version(for: context.provider) ?? "not detected"
+            context.store.version(for: context.provider) ?? L10n.tr("not detected")
         }
     }
 
@@ -176,7 +176,7 @@ struct CodexProviderImplementation: ProviderImplementation {
             }
         } else {
             let hint = context.store.lastCreditsError ?? context.metadata.creditsHint
-            entries.append(.text(hint, .secondary))
+            entries.append(.text(L10n.tr(hint), .secondary))
         }
     }
 

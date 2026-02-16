@@ -314,8 +314,8 @@ extension StatusItemController {
 
     func postLoginNotification(for provider: UsageProvider) {
         let name = ProviderDescriptorRegistry.descriptor(for: provider).metadata.displayName
-        let title = "\(name) login successful"
-        let body = "You can return to the app; authentication finished."
+        let title = L10n.format("%@ login successful", name)
+        let body = L10n.tr("You can return to the app; authentication finished.")
         AppNotifications.shared.post(idPrefix: "login-\(provider.rawValue)", title: title, body: body)
     }
 

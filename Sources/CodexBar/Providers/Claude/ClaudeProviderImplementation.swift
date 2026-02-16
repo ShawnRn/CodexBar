@@ -10,7 +10,7 @@ struct ClaudeProviderImplementation: ProviderImplementation {
     @MainActor
     func presentation(context _: ProviderPresentationContext) -> ProviderPresentation {
         ProviderPresentation { context in
-            var versionText = context.store.version(for: context.provider) ?? "not detected"
+            var versionText = context.store.version(for: context.provider) ?? L10n.tr("not detected")
             if let parenRange = versionText.range(of: "(") {
                 versionText = versionText[..<parenRange.lowerBound].trimmingCharacters(in: .whitespaces)
             }

@@ -10,7 +10,7 @@ struct CopilotProviderImplementation: ProviderImplementation {
 
     @MainActor
     func presentation(context _: ProviderPresentationContext) -> ProviderPresentation {
-        ProviderPresentation { _ in "github api" }
+        ProviderPresentation { _ in L10n.tr("github api") }
     }
 
     @MainActor

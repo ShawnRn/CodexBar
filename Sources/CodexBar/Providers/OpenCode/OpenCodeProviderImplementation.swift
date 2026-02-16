@@ -10,7 +10,7 @@ struct OpenCodeProviderImplementation: ProviderImplementation {
 
     @MainActor
     func presentation(context _: ProviderPresentationContext) -> ProviderPresentation {
-        ProviderPresentation { _ in "web" }
+        ProviderPresentation { _ in L10n.tr("web") }
     }
 
     @MainActor
