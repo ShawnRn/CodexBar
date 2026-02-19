@@ -386,6 +386,7 @@ extension StatusItemController {
     func menuBarDisplayText(for provider: UsageProvider, snapshot: UsageSnapshot?) -> String? {
         MenuBarDisplayText.displayText(
             mode: self.settings.menuBarDisplayMode,
+            provider: provider,
             percentWindow: self.menuBarPercentWindow(for: provider, snapshot: snapshot),
             paceWindow: snapshot?.secondary,
             showUsed: self.settings.usageBarsShowUsed)

@@ -34,7 +34,7 @@
 "Menu bar shows percent" = "菜单栏显示百分比";
 "Replace critter bars with provider branding icons and a percentage." = "用提供商品牌图标和百分比替代条形图。";
 "Display mode" = "显示模式";
-"Choose what to show in the menu bar (Pace shows usage vs. expected)." = "选择菜单栏显示内容（剩余配额显示次窗口剩余百分比）。";
+"Choose what to show in the menu bar (Pace shows usage vs. expected)." = "选择菜单栏显示内容（消耗速率=实际用量相对按时间推算预期用量的差值）。";
 "Menu content" = "菜单内容";
 "Show usage as used" = "按已用显示用量";
 "Progress bars fill as you consume quota (instead of showing remaining)." = "进度条随配额消耗填充（而不是显示剩余）。";
@@ -78,11 +78,11 @@
 "Receive only stable, production-ready releases." = "仅接收稳定、可用于生产的版本。";
 "Receive stable releases plus beta previews." = "接收稳定版及测试预览版。";
 "Percent" = "百分比";
-"Pace" = "剩余配额";
+"Pace" = "消耗速率";
 "Both" = "两者";
 "Show remaining/used percentage (e.g. 45%)" = "显示剩余/已用百分比（如 45%）";
-"Show pace indicator (e.g. +5%)" = "显示次窗口剩余配额（如 70%）";
-"Show both percentage and pace (e.g. 45% · +5%)" = "同时显示百分比与剩余配额（如 45% · 70%）";
+"Show pace indicator (e.g. +5%)" = "显示消耗速率偏差（如 +5%，表示比预期多用 5%）";
+"Show both percentage and pace (e.g. 45% · +5%)" = "同时显示百分比与消耗速率（如 45% · +5%）";
 "Manual" = "手动";
 "Automatic" = "自动";
 "Primary" = "主窗口";
@@ -131,9 +131,9 @@
 "Refresh" = "刷新";
 "Last %@ fetch failed:" = "%@ 最近一次拉取失败：";
 "just now" = "刚刚";
-"Pace: %@" = "剩余配额：%@";
-"Pace: %@ · %@" = "剩余配额：%@ · %@";
-"On pace" = "剩余配额正常";
+"Pace: %@" = "消耗速率：%@";
+"Pace: %@ · %@" = "消耗速率：%@ · %@";
+"On pace" = "消耗速率正常";
 "%d%% in deficit" = "落后 %d%%";
 "%d%% in reserve" = "富余 %d%%";
 "Lasts until reset" = "可持续至重置";

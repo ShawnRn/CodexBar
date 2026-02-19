@@ -9,30 +9,31 @@ enum MenuBarDisplayText {
         return String(format: "%.0f%%", clamped)
     }
 
-    static func secondaryQuotaText(window: RateWindow?) -> String? {
+    static func paceText(provider: UsageProvider, window: RateWindow?, now: Date = .init()) -> String? {
         guard let window else { return nil }
-        let clamped = min(100, max(0, window.remainingPercent))
-        return String(format: "%.0f%%", clamped)
+        guard let pace = UsagePaceText.weeklyPace(provider: provider, window: window, now: now) else { return nil }
+        let deltaValue = Int(abs(pace.deltaPercent).rounded())
+        let sign = pace.deltaPercent >= 0 ? "+" : "-"
+        return "\(sign)\(deltaValue)%"
     }
 
     static func displayText(
         mode: MenuBarDisplayMode,
+        provider: UsageProvider,
         percentWindow: RateWindow?,
         paceWindow: RateWindow?,
-        showUsed: Bool) -> String?
+        showUsed: Bool,
+        now: Date = .init()) -> String?
     {
-        let primaryPercent = self.percentText(window: percentWindow, showUsed: showUsed)
-        let secondaryQuota = self.secondaryQuotaText(window: paceWindow)
-
         switch mode {
         case .percent:
-            return primaryPercent
+            return self.percentText(window: percentWindow, showUsed: showUsed)
         case .pace:
-            return secondaryQuota ?? primaryPercent
+            return self.paceText(provider: provider, window: paceWindow, now: now)
         case .both:
-            guard let primaryPercent else { return secondaryQuota }
-            guard let secondaryQuota else { return primaryPercent }
-            return "\(primaryPercent) · \(secondaryQuota)"
+            guard let percent = percentText(window: percentWindow, showUsed: showUsed) else { return nil }
+            guard let pace = Self.paceText(provider: provider, window: paceWindow, now: now) else { return percent }
+            return "\(percent) · \(pace)"
         }
     }
 }
