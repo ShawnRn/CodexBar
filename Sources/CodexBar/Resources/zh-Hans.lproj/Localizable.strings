@@ -40,8 +40,8 @@
 "Progress bars fill as you consume quota (instead of showing remaining)." = "进度条随配额消耗填充（而不是显示剩余）。";
 "Show reset time as clock" = "重置时间显示为时钟";
 "Display reset times as absolute clock values instead of countdowns." = "将重置时间显示为绝对时刻而非倒计时。";
-"Show credits + extra usage" = "显示积分与额外用量";
-"Show Codex Credits and Claude Extra usage sections in the menu." = "在菜单中显示 Codex 积分与 Claude 额外用量区块。";
+"Show credits + extra usage" = "显示配额与额外用量";
+"Show Codex Credits and Claude Extra usage sections in the menu." = "在菜单中显示 Codex 配额与 Claude 额外用量区块。";
 "Show all token accounts" = "显示所有 Token 账号";
 "Stack token accounts in the menu (otherwise show an account switcher bar)." = "在菜单中堆叠显示 Token 账号（否则显示账号切换条）。";
 "Keyboard shortcut" = "快捷键";
@@ -120,7 +120,7 @@
 "not detected" = "未检测到";
 "Refreshing" = "刷新中";
 "Not fetched yet" = "尚未获取";
-"Credits" = "积分";
+"Credits" = "配额";
 "Cost" = "成本";
 "Disabled — no recent data" = "已禁用 — 无近期数据";
 "Select a provider" = "请选择一个提供商";
@@ -171,10 +171,10 @@
 "web" = "网页";
 "github api" = "GitHub API";
 "Cached: %@ • %@" = "已缓存：%@ • %@";
-"Credits unavailable; keep Codex running to refresh." = "积分暂不可用；保持 Codex 运行后会自动刷新。";
+"Credits unavailable; keep Codex running to refresh." = "配额暂不可用；保持 Codex 运行后会自动刷新。";
 "Usage source" = "用量来源";
 "OpenAI web extras" = "OpenAI 网页扩展";
-"Show usage breakdown, credits history, and code review via chatgpt.com." = "通过 chatgpt.com 显示用量拆分、积分历史和代码审查。";
+"Show usage breakdown, credits history, and code review via chatgpt.com." = "通过 chatgpt.com 显示用量拆分、配额历史和代码审查。";
 "OpenAI cookies" = "OpenAI Cookie";
 "Automatic imports browser cookies for dashboard extras." = "自动导入浏览器 Cookie 以获取面板扩展数据。";
 "Paste a Cookie header from a chatgpt.com request." = "粘贴来自 chatgpt.com 请求的 Cookie Header。";
@@ -249,7 +249,7 @@
 "Session" = "会话";
 "Weekly" = "每周";
 "Refreshing..." = "刷新中...";
-"Credits remaining" = "剩余积分";
+"Credits remaining" = "剩余配额";
 "%@ tokens" = "%@ tokens";
 "Code review" = "代码审查";
 "%@ / %@ (%@ remaining)" = "%@ / %@（剩余 %@）";
@@ -261,13 +261,13 @@
 "Extra usage" = "额外用量";
 "This month" = "本月";
 "%@: %@ / %@" = "%@：%@ / %@";
-"Buy Credits" = "购买积分";
-"Buy Credits..." = "购买积分...";
-"Credits history" = "积分历史";
+"Buy Credits" = "购买配额";
+"Buy Credits..." = "购买配额...";
+"Credits history" = "配额历史";
 "Usage breakdown" = "用量拆分";
 "Usage history (30 days)" = "用量历史（30 天）";
 "No Codex sessions found yet. Run at least one Codex prompt first." = "尚未发现 Codex 会话，请先至少运行一次 Codex 提示。";
-"Found sessions, but no rate limit events yet." = "已发现会话，但尚未出现速率限制事件。";
+"Found sessions, but no rate limit events yet." = "已检测到会话，但暂未出现限额事件。";
 "Could not parse Codex session log." = "无法解析 Codex 会话日志。";
 "Codex not running. Try running a Codex command first. (%@)" = "Codex 未运行。请先运行一次 Codex 命令。（%@）";
 "Codex connection failed: %@" = "Codex 连接失败：%@";
@@ -280,7 +280,7 @@
 "tomorrow, %@" = "明天 %@";
 "Resets" = "重置";
 "Resets %@" = "将于 %@重置";
-"%@ · %@ · %@ credits" = "%@ · %@ · %@ 积分";
+"%@ · %@ · %@ credits" = "%@ · %@ · %@ 配额";
 "%@ — %@: %@" = "%@ — %@：%@";
 "Expired" = "已过期";
 "Resets soon" = "即将重置";
@@ -349,7 +349,7 @@
 "Could not open Terminal for Gemini" = "无法为 Gemini 打开终端";
 "Could not start claude /login" = "无法启动 claude /login";
 "Could not start codex login" = "无法启动 codex 登录";
-"Credits: %@" = "积分：%@";
+"Credits: %@" = "配额：%@";
 "Cursor login failed" = "Cursor 登录失败";
 "Effective PATH" = "生效的 PATH";
 "Email" = "邮箱";
@@ -381,7 +381,7 @@
 "Login shell PATH (startup capture)" = "登录 shell PATH（启动捕获）";
 "MCP details" = "MCP 详情";
 "No JetBrains IDE detected" = "未检测到 JetBrains IDE";
-"No credits history data." = "暂无积分历史数据。";
+"No credits history data." = "暂无配额历史数据。";
 "No fetch attempts yet." = "暂无拉取尝试。";
 "No log yet. Fetch to load." = "暂无日志。请先获取。";
 "No log yet. Update OpenAI cookies in Providers -> Codex to run an import." = "暂无日志。请在 提供商 -> Codex 更新 OpenAI cookies 以触发导入。";
