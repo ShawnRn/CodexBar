@@ -9,7 +9,12 @@ extension StatusItemController {
         let alert = NSAlert()
         alert.messageText = L10n.tr("Vertex AI Login")
         alert.informativeText = L10n.tr(
-            "To use Vertex AI tracking, you need to authenticate with Google Cloud.\n\n1. Open Terminal\n2. Run: gcloud auth application-default login\n3. Follow the browser prompts to sign in\n4. Set your project: gcloud config set project PROJECT_ID\n\nWould you like to open Terminal now?")
+            "To use Vertex AI tracking, you need to authenticate with Google Cloud.\n\n" +
+                "1. Open Terminal\n" +
+                "2. Run: gcloud auth application-default login\n" +
+                "3. Follow the browser prompts to sign in\n" +
+                "4. Set your project: gcloud config set project PROJECT_ID\n\n" +
+                "Would you like to open Terminal now?")
         alert.alertStyle = .informational
         alert.addButton(withTitle: L10n.tr("Open Terminal"))
         alert.addButton(withTitle: L10n.tr("Cancel"))

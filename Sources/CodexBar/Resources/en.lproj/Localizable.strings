@@ -34,7 +34,7 @@
 "Menu bar shows percent" = "Menu bar shows percent";
 "Replace critter bars with provider branding icons and a percentage." = "Replace critter bars with provider branding icons and a percentage.";
 "Display mode" = "Display mode";
-"Choose what to show in the menu bar (Pace shows usage vs. expected)." = "Choose what to show in the menu bar (Pace shows usage vs. expected).";
+"Choose what to show in the menu bar (Pace shows usage vs. expected)." = "Choose what to show in the menu bar (Pace shows the secondary window remaining quota).";
 "Menu content" = "Menu content";
 "Show usage as used" = "Show usage as used";
 "Progress bars fill as you consume quota (instead of showing remaining)." = "Progress bars fill as you consume quota (instead of showing remaining).";
@@ -81,8 +81,8 @@
 "Pace" = "Pace";
 "Both" = "Both";
 "Show remaining/used percentage (e.g. 45%)" = "Show remaining/used percentage (e.g. 45%)";
-"Show pace indicator (e.g. +5%)" = "Show pace indicator (e.g. +5%)";
-"Show both percentage and pace (e.g. 45% · +5%)" = "Show both percentage and pace (e.g. 45% · +5%)";
+"Show pace indicator (e.g. +5%)" = "Show secondary remaining quota (e.g. 70%)";
+"Show both percentage and pace (e.g. 45% · +5%)" = "Show both percentage and secondary quota (e.g. 45% · 70%)";
 "Manual" = "Manual";
 "Automatic" = "Automatic";
 "Primary" = "Primary";

@@ -43,7 +43,9 @@ public enum UsageFormatter {
         if let tomorrow = calendar.date(byAdding: .day, value: 1, to: now),
            calendar.isDate(date, inSameDayAs: tomorrow)
         {
-            return String(format: NSLocalizedString("tomorrow, %@", comment: ""), date.formatted(date: .omitted, time: .shortened))
+            return String(
+                format: NSLocalizedString("tomorrow, %@", comment: ""),
+                date.formatted(date: .omitted, time: .shortened))
         }
         return date.formatted(date: .abbreviated, time: .shortened)
     }
@@ -79,7 +81,9 @@ public enum UsageFormatter {
             #if os(macOS)
             let rel = RelativeDateTimeFormatter()
             rel.unitsStyle = .abbreviated
-            return String(format: NSLocalizedString("Updated %@", comment: ""), rel.localizedString(for: date, relativeTo: now))
+            return String(
+                format: NSLocalizedString("Updated %@", comment: ""),
+                rel.localizedString(for: date, relativeTo: now))
             #else
             let seconds = max(0, Int(now.timeIntervalSince(date)))
             if seconds < 3600 {
@@ -90,7 +94,9 @@ public enum UsageFormatter {
             return String(format: NSLocalizedString("Updated %dh ago", comment: ""), wholeHours)
             #endif
         } else {
-            return String(format: NSLocalizedString("Updated %@", comment: ""), date.formatted(date: .omitted, time: .shortened))
+            return String(
+                format: NSLocalizedString("Updated %@", comment: ""),
+                date.formatted(date: .omitted, time: .shortened))
         }
     }
 

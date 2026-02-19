@@ -73,7 +73,8 @@ struct DebugPane: View {
 
                 SettingsSection(
                     title: L10n.tr("Loading animations"),
-                    caption: L10n.tr("Pick a pattern and replay it in the menu bar. \"Random\" keeps the existing behavior."))
+                    caption: L10n
+                        .tr("Pick a pattern and replay it in the menu bar. \"Random\" keeps the existing behavior."))
                 {
                     Picker(L10n.tr("Animation pattern"), selection: self.animationPatternBinding) {
                         Text(L10n.tr("Random (default)")).tag(nil as LoadingPattern?)
@@ -206,7 +207,9 @@ struct DebugPane: View {
                             Text(
                                 self.store.openAIDashboardCookieImportDebugLog?.isEmpty == false
                                     ? (self.store.openAIDashboardCookieImportDebugLog ?? "")
-                                    : L10n.tr("No log yet. Update OpenAI cookies in Providers -> Codex to run an import."))
+                                    : L10n
+                                    .tr(
+                                        "No log yet. Update OpenAI cookies in Providers -> Codex to run an import."))
                                 .font(.system(.footnote, design: .monospaced))
                                 .textSelection(.enabled)
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -271,7 +274,8 @@ struct DebugPane: View {
 
                 SettingsSection(
                     title: L10n.tr("CLI sessions"),
-                    caption: L10n.tr("Keep Codex/Claude CLI sessions alive after a probe. Default exits once data is captured."))
+                    caption: L10n
+                        .tr("Keep Codex/Claude CLI sessions alive after a probe. Default exits once data is captured."))
                 {
                     PreferenceToggleRow(
                         title: L10n.tr("Keep CLI sessions alive"),
@@ -351,7 +355,8 @@ struct DebugPane: View {
 
                 SettingsSection(
                     title: L10n.tr("CLI paths"),
-                    caption: L10n.tr("Resolved Codex binary and PATH layers; startup login PATH capture (short timeout)."))
+                    caption: L10n
+                        .tr("Resolved Codex binary and PATH layers; startup login PATH capture (short timeout)."))
                 {
                     self.binaryRow(title: L10n.tr("Codex binary"), value: self.store.pathDebugInfo.codexBinary)
                     self.binaryRow(title: L10n.tr("Claude binary"), value: self.store.pathDebugInfo.claudeBinary)

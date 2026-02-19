@@ -18,7 +18,8 @@ struct DisplayPane: View {
                         binding: self.$settings.mergeIcons)
                     PreferenceToggleRow(
                         title: L10n.tr("Switcher shows icons"),
-                        subtitle: L10n.tr("Show provider icons in the switcher (otherwise show a weekly progress line)."),
+                        subtitle: L10n
+                            .tr("Show provider icons in the switcher (otherwise show a weekly progress line)."),
                         binding: self.$settings.switcherShowsIcons)
                         .disabled(!self.settings.mergeIcons)
                         .opacity(self.settings.mergeIcons ? 1 : 0.5)

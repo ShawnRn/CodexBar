@@ -7,7 +7,8 @@ extension StatusItemController {
         let detectedIDEs = JetBrainsIDEDetector.detectInstalledIDEs(includeMissingQuota: true)
         if detectedIDEs.isEmpty {
             let message = L10n.tr(
-                "Install a JetBrains IDE with AI Assistant enabled, then refresh CodexBar. Alternatively, set a custom path in Settings.")
+                "Install a JetBrains IDE with AI Assistant enabled, then refresh CodexBar. " +
+                    "Alternatively, set a custom path in Settings.")
             self.presentLoginAlert(
                 title: L10n.tr("No JetBrains IDE detected"),
                 message: message)

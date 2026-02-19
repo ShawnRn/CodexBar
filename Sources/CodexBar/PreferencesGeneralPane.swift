@@ -89,11 +89,13 @@ struct GeneralPane: View {
                     PreferenceToggleRow(
                         title: L10n.tr("Check provider status"),
                         subtitle: L10n.tr(
-                            "Polls OpenAI/Claude status pages and Google Workspace for Gemini/Antigravity, surfacing incidents in the icon and menu."),
+                            "Polls OpenAI/Claude status pages and Google Workspace for " +
+                                "Gemini/Antigravity, surfacing incidents in the icon and menu."),
                         binding: self.$settings.statusChecksEnabled)
                     PreferenceToggleRow(
                         title: L10n.tr("Session quota notifications"),
-                        subtitle: L10n.tr("Notifies when the 5-hour session quota hits 0% and when it becomes available again."),
+                        subtitle: L10n
+                            .tr("Notifies when the 5-hour session quota hits 0% and when it becomes available again."),
                         binding: self.$settings.sessionQuotaNotificationsEnabled)
                 }
 

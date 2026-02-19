@@ -38,7 +38,9 @@ struct ProviderDetailView: View {
 
                 if let errorDisplay {
                     ProviderErrorView(
-                        title: L10n.format("Last %@ fetch failed:", self.store.metadata(for: self.provider).displayName),
+                        title: L10n.format(
+                            "Last %@ fetch failed:",
+                            self.store.metadata(for: self.provider).displayName),
                         display: errorDisplay,
                         isExpanded: self.$isErrorExpanded,
                         onCopy: { self.onCopyError(errorDisplay.full) })

@@ -145,7 +145,8 @@ struct ClaudeProviderImplementation: ProviderImplementation {
                 return L10n.tr("Global Keychain access is disabled in Advanced, so this setting is currently inactive.")
             }
             return L10n.tr(
-                "Controls Claude OAuth Keychain prompts when experimental reader mode is off. Choosing \"Never prompt\" can make OAuth unavailable; use Web/CLI when needed.")
+                "Controls Claude OAuth Keychain prompts when experimental reader mode is off. " +
+                    "Choosing \"Never prompt\" can make OAuth unavailable; use Web/CLI when needed.")
         }
 
         return [

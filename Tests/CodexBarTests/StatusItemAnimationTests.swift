@@ -309,68 +309,51 @@ struct StatusItemAnimationTests {
     }
 
     @Test
-    func menuBarDisplayTextFormatsPercentAndPace() {
-        let now = Date(timeIntervalSince1970: 0)
+    func menuBarDisplayTextFormatsPercentAndSecondaryQuota() {
         let percentWindow = RateWindow(usedPercent: 40, windowMinutes: nil, resetsAt: nil, resetDescription: nil)
         let paceWindow = RateWindow(
             usedPercent: 30,
             windowMinutes: 10080,
-            resetsAt: now.addingTimeInterval(60 * 60 * 24 * 6),
+            resetsAt: Date(timeIntervalSince1970: 0).addingTimeInterval(60 * 60 * 24 * 6),
             resetDescription: nil)
 
         let percent = MenuBarDisplayText.displayText(
             mode: .percent,
-            provider: .codex,
             percentWindow: percentWindow,
             paceWindow: paceWindow,
-            showUsed: true,
-            now: now)
+            showUsed: true)
         let pace = MenuBarDisplayText.displayText(
             mode: .pace,
-            provider: .codex,
             percentWindow: percentWindow,
             paceWindow: paceWindow,
-            showUsed: true,
-            now: now)
+            showUsed: true)
         let both = MenuBarDisplayText.displayText(
             mode: .both,
-            provider: .codex,
             percentWindow: percentWindow,
             paceWindow: paceWindow,
-            showUsed: true,
-            now: now)
+            showUsed: true)
 
         #expect(percent == "40%")
-        #expect(pace == "+16%")
-        #expect(both == "40% · +16%")
+        #expect(pace == "70%")
+        #expect(both == "40% · 70%")
     }
 
     @Test
-    func menuBarDisplayTextHidesWhenPaceUnavailable() {
-        let now = Date(timeIntervalSince1970: 0)
+    func menuBarDisplayTextFallsBackWhenSecondaryQuotaUnavailable() {
         let percentWindow = RateWindow(usedPercent: 40, windowMinutes: nil, resetsAt: nil, resetDescription: nil)
-        let paceWindow = RateWindow(
-            usedPercent: 30,
-            windowMinutes: 10080,
-            resetsAt: now.addingTimeInterval(60 * 60 * 24 * 6),
-            resetDescription: nil)
 
         let pace = MenuBarDisplayText.displayText(
             mode: .pace,
-            provider: .gemini,
             percentWindow: percentWindow,
-            paceWindow: paceWindow,
-            showUsed: true,
-            now: now)
+            paceWindow: nil,
+            showUsed: true)
         let both = MenuBarDisplayText.displayText(
             mode: .both,
-            provider: .gemini,
             percentWindow: percentWindow,
-            paceWindow: paceWindow,
-            showUsed: true,
-            now: now)
+            paceWindow: nil,
+            showUsed: true)
 
-        #expect(pace == nil)
-        #expect(both == nil)
+        #expect(pace == "40%")
+        #expect(both == "40%")
     }
 }

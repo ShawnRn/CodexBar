@@ -127,7 +127,9 @@ public enum AntigravityStatusProbeError: LocalizedError, Sendable, Equatable {
         case "lsof not available":
             NSLocalizedString("Antigravity port detection needs lsof. Install it, then retry.", comment: "")
         case "no listening ports found":
-            NSLocalizedString("Antigravity is running but not exposing ports yet. Try again in a few seconds.", comment: "")
+            NSLocalizedString(
+                "Antigravity is running but not exposing ports yet. Try again in a few seconds.",
+                comment: "")
         default:
             String(format: NSLocalizedString("Antigravity port detection failed: %@", comment: ""), message)
         }

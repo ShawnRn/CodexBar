@@ -80,13 +80,14 @@ struct AdvancedPane: View {
                 SettingsSection(
                     title: L10n.tr("Keychain access"),
                     caption: L10n.tr(
-                        "Disable all Keychain reads and writes. Browser cookie import is unavailable; paste Cookie headers manually in Providers."))
+                        "Disable all Keychain reads and writes. Browser cookie import is unavailable; " +
+                            "paste Cookie headers manually in Providers."))
                 {
-                        PreferenceToggleRow(
-                            title: L10n.tr("Disable Keychain access"),
-                            subtitle: L10n.tr("Prevents any Keychain access while enabled."),
-                            binding: self.$settings.debugDisableKeychainAccess)
-                    }
+                    PreferenceToggleRow(
+                        title: L10n.tr("Disable Keychain access"),
+                        subtitle: L10n.tr("Prevents any Keychain access while enabled."),
+                        binding: self.$settings.debugDisableKeychainAccess)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 20)
