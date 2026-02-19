@@ -292,11 +292,17 @@ private enum RPCWireError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case let .startFailed(message):
-            "Codex not running. Try running a Codex command first. (\(message))"
+            String(
+                format: NSLocalizedString("Codex not running. Try running a Codex command first. (%@)", comment: ""),
+                message)
         case let .requestFailed(message):
-            "Codex connection failed: \(message)"
+            String(
+                format: NSLocalizedString("Codex connection failed: %@", comment: ""),
+                message)
         case let .malformed(message):
-            "Codex returned invalid data: \(message)"
+            String(
+                format: NSLocalizedString("Codex returned invalid data: %@", comment: ""),
+                message)
         }
     }
 }

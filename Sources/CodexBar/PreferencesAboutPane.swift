@@ -49,7 +49,7 @@ struct AboutPane: View {
             }
 
             VStack(spacing: 2) {
-                Text("CodexBar")
+                Text(L10n.tr("CodexBar"))
                     .font(.title3).bold()
                 Text(L10n.format("Version %@", self.versionString))
                     .foregroundStyle(.secondary)
@@ -66,11 +66,11 @@ struct AboutPane: View {
             VStack(alignment: .center, spacing: 10) {
                 AboutLinkRow(
                     icon: "chevron.left.slash.chevron.right",
-                    title: "GitHub",
+                    title: L10n.tr("GitHub"),
                     url: "https://github.com/steipete/CodexBar")
-                AboutLinkRow(icon: "globe", title: "Website", url: "https://steipete.me")
-                AboutLinkRow(icon: "bird", title: "Twitter", url: "https://twitter.com/steipete")
-                AboutLinkRow(icon: "envelope", title: "Email", url: "mailto:peter@steipete.me")
+                AboutLinkRow(icon: "globe", title: L10n.tr("Website"), url: "https://steipete.me")
+                AboutLinkRow(icon: "bird", title: L10n.tr("Twitter"), url: "https://twitter.com/steipete")
+                AboutLinkRow(icon: "envelope", title: L10n.tr("Email"), url: "mailto:peter@steipete.me")
             }
             .padding(.top, 8)
             .frame(maxWidth: .infinity)

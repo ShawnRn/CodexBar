@@ -371,7 +371,7 @@ struct MenuDescriptor {
     {
         let line = UsageFormatter
             .usageLine(remaining: window.remainingPercent, used: window.usedPercent, showUsed: showUsed)
-        entries.append(.text("\(title): \(line)", .primary))
+        entries.append(.text(L10n.format("%@: %@", title, line), .primary))
         if let resetOverride {
             entries.append(.text(resetOverride, .secondary))
         } else if let reset = UsageFormatter.resetLine(for: window, style: resetStyle) {

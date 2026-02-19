@@ -986,12 +986,12 @@ extension StatusItemController {
 
         let submenu = NSMenu()
         submenu.delegate = self
-        let titleItem = NSMenuItem(title: "MCP details", action: nil, keyEquivalent: "")
+        let titleItem = NSMenuItem(title: L10n.tr("MCP details"), action: nil, keyEquivalent: "")
         titleItem.isEnabled = false
         submenu.addItem(titleItem)
 
         if let window = timeLimit.windowLabel {
-            let item = NSMenuItem(title: "Window: \(window)", action: nil, keyEquivalent: "")
+            let item = NSMenuItem(title: L10n.format("Window: %@", window), action: nil, keyEquivalent: "")
             item.isEnabled = false
             submenu.addItem(item)
         }
@@ -999,7 +999,7 @@ extension StatusItemController {
             let reset = self.settings.resetTimeDisplayStyle == .absolute
                 ? UsageFormatter.resetDescription(from: resetTime)
                 : UsageFormatter.resetCountdownDescription(from: resetTime)
-            let item = NSMenuItem(title: "Resets: \(reset)", action: nil, keyEquivalent: "")
+            let item = NSMenuItem(title: L10n.format("Resets: %@", reset), action: nil, keyEquivalent: "")
             item.isEnabled = false
             submenu.addItem(item)
         }
@@ -1010,7 +1010,7 @@ extension StatusItemController {
         }
         for detail in sortedDetails {
             let usage = UsageFormatter.tokenCountString(detail.usage)
-            let item = NSMenuItem(title: "\(detail.modelCode): \(usage)", action: nil, keyEquivalent: "")
+            let item = NSMenuItem(title: L10n.format("%@: %@", detail.modelCode, usage), action: nil, keyEquivalent: "")
             submenu.addItem(item)
         }
         return submenu

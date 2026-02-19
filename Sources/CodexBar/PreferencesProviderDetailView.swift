@@ -206,8 +206,8 @@ private struct ProviderDetailInfoGrid: View {
 
     var body: some View {
         let status = self.store.status(for: self.provider)
-        let source = L10n.tr(self.store.sourceLabel(for: self.provider))
-        let version = self.store.version(for: self.provider) ?? L10n.tr("not detected")
+        let source = L10n.localizedDynamicValue(self.store.sourceLabel(for: self.provider))
+        let version = L10n.localizedDynamicValue(self.store.version(for: self.provider) ?? L10n.tr("not detected"))
         let updated = self.updatedText
         let email = self.model.email
         let plan = self.model.planText ?? ""
@@ -222,7 +222,7 @@ private struct ProviderDetailInfoGrid: View {
             if let status {
                 ProviderDetailInfoRow(
                     label: L10n.tr("Status"),
-                    value: status.description ?? status.indicator.label,
+                    value: self.localizedStatusText(status),
                     labelWidth: self.labelWidth)
             }
 
@@ -246,6 +246,33 @@ private struct ProviderDetailInfoGrid: View {
             return L10n.tr("Refreshing")
         }
         return L10n.tr("Not fetched yet")
+    }
+
+    private func localizedStatusText(_ status: ProviderStatus) -> String {
+        guard let description = status.description?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !description.isEmpty
+        else {
+            return status.indicator.label
+        }
+
+        switch description.lowercased() {
+        case "all systems operational":
+            return L10n.tr("All Systems Operational")
+        case "operational":
+            return L10n.tr("Operational")
+        case "partial outage":
+            return L10n.tr("Partial outage")
+        case "major outage":
+            return L10n.tr("Major outage")
+        case "critical issue":
+            return L10n.tr("Critical issue")
+        case "maintenance":
+            return L10n.tr("Maintenance")
+        case "status unknown":
+            return L10n.tr("Status unknown")
+        default:
+            return description
+        }
     }
 }
 
