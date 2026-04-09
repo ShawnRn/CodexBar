@@ -64,7 +64,7 @@
   - `upstream-sync.yml`：定时/手动同步 `steipete/CodexBar` 到机器人分支并生成 PR；`quotio` 仅开 issue 供审查。
   - `l10n-sync.yml`：从 `en.lproj/Localizable.strings` 同步 `zh-Hans`。
   - `release-app.yml`：单一发布通道；`main` 上 prerelease 版本会自动发 prerelease，其他版本可手动触发正式发布。
-- 发布 workflow 依赖这些 secrets：`SPARKLE_PRIVATE_KEY`、`APP_STORE_CONNECT_KEY_ID`、`APP_STORE_CONNECT_ISSUER_ID`、`APP_STORE_CONNECT_PRIVATE_KEY`，以及签名证书相关 secrets。
+- 当前轻量发布 workflow 只依赖 `SPARKLE_PRIVATE_KEY`。若缺少该 secret，GitHub Release 仍会构建并上传 zip/dSYM，但会跳过 appcast 自动更新。
 - 应用内不再暴露 stable/beta 切换；`SUPublicEDKey`、`SUFeedURL`、GitHub release 链接若不一致，会直接影响“检查更新”。
 
 ### 本地环境已知事项

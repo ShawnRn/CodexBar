@@ -28,7 +28,9 @@
   - 单一发布通道
   - `main` 上 prerelease 版本自动发 GitHub prerelease
   - 其他版本可手动触发正式发布
-  - 发布后回写 `appcast.xml`
+  - 不做 notarization / App Store Connect 公证
+  - 若仓库存在 `SPARKLE_PRIVATE_KEY`，发布后回写 `appcast.xml`
+  - 若缺少 `SPARKLE_PRIVATE_KEY`，仍会上传 GitHub Release 资产，但跳过 appcast
 
 ## 本机打包现实约束
 - 仓库路径位于 iCloud Drive（`Mobile Documents/...`）。

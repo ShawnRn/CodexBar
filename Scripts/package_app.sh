@@ -3,6 +3,7 @@ set -euo pipefail
 CONF=${1:-release}
 ALLOW_LLDB=${CODEXBAR_ALLOW_LLDB:-0}
 SIGNING_MODE=${CODEXBAR_SIGNING:-}
+ENABLE_SPARKLE_UPDATES=${CODEXBAR_ENABLE_SPARKLE_UPDATES:-0}
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 cd "$ROOT"
 
@@ -138,7 +139,7 @@ if [[ "$LOWER_CONF" == "debug" ]]; then
   FEED_URL=""
   AUTO_CHECKS=false
 fi
-if [[ "$SIGNING_MODE" == "adhoc" ]]; then
+if [[ "$SIGNING_MODE" == "adhoc" && "$ENABLE_SPARKLE_UPDATES" != "1" ]]; then
   FEED_URL=""
   AUTO_CHECKS=false
 fi
