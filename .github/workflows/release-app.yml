@@ -161,6 +161,11 @@ jobs:
             "CodexBar-${VERSION}.dSYM.zip" \
             --clobber
 
+      - name: Install Python signing dependency
+        if: ${{ steps.mode.outputs.release_enabled == 'true' }}
+        shell: bash
+        run: python3 -m pip install --user cryptography
+
       - name: Generate and validate appcast
         if: ${{ steps.mode.outputs.release_enabled == 'true' }}
         shell: bash
