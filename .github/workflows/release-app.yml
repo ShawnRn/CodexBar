@@ -65,6 +65,15 @@ jobs:
         if: ${{ steps.mode.outputs.release_enabled != 'true' }}
         run: echo "Skipping release for this push."
 
+      - name: Require Sparkle signing key for app-updatable releases
+        if: ${{ steps.mode.outputs.release_enabled == 'true' && env.HAS_SPARKLE_PRIVATE_KEY != 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "SPARKLE_PRIVATE_KEY secret is required so release-app can regenerate appcast.xml." >&2
+          echo "Without appcast.xml, Sparkle clients cannot discover this update in-app." >&2
+          exit 1
+
       - name: Install lint tools
         if: ${{ steps.mode.outputs.release_enabled == 'true' }}
         run: ./Scripts/install_lint_tools.sh
@@ -78,10 +87,6 @@ jobs:
           python3 Scripts/sync_localizable.py --check
           pnpm check
           swift test --filter UpdateChannelTests --no-parallel
-
-      - name: Install Sparkle tools
-        if: ${{ steps.mode.outputs.release_enabled == 'true' && env.HAS_SPARKLE_PRIVATE_KEY == 'true' }}
-        run: brew install sparkle
 
       - name: Package release artifacts
         if: ${{ steps.mode.outputs.release_enabled == 'true' }}
@@ -157,7 +162,7 @@ jobs:
             --clobber
 
       - name: Generate and validate appcast
-        if: ${{ steps.mode.outputs.release_enabled == 'true' && env.HAS_SPARKLE_PRIVATE_KEY == 'true' }}
+        if: ${{ steps.mode.outputs.release_enabled == 'true' }}
         shell: bash
         env:
           SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
@@ -170,14 +175,14 @@ jobs:
           xmllint --noout appcast.xml
 
       - name: Upload appcast asset
-        if: ${{ steps.mode.outputs.release_enabled == 'true' && env.HAS_SPARKLE_PRIVATE_KEY == 'true' }}
+        if: ${{ steps.mode.outputs.release_enabled == 'true' }}
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release upload "${{ steps.mode.outputs.tag }}" appcast.xml --clobber
 
       - name: Commit appcast
-        if: ${{ steps.mode.outputs.release_enabled == 'true' && env.HAS_SPARKLE_PRIVATE_KEY == 'true' }}
+        if: ${{ steps.mode.outputs.release_enabled == 'true' }}
         shell: bash
         run: |
           set -euo pipefail

@@ -16,10 +16,12 @@
   - 旧身份 `com.steipete.codexbar*` 仅作读取/迁移 fallback
 
 ## GitHub Actions
-- `ci.yml`：基础检查 + l10n drift 检查。
+- `ci.yml`：仅跑 macOS 基础检查 + l10n drift 检查。
+- `release-cli.yml`：独立的 Linux CLI 手动发布流程，不参与常规 app CI / release。
 - `upstream-sync.yml`：
   - `upstream` 目标为 `steipete/CodexBar`
-  - 自动更新机器人分支并创建/更新 PR
+  - 无冲突时直接 merge 到 `main`，随后由现有 release workflow 自动发 beta
+  - 有冲突时 workflow 失败并在 summary 输出冲突文件
   - `quotio` 只开审查 issue，不自动合并
 - `l10n-sync.yml`：
   - `en.lproj/Localizable.strings` 是唯一源
@@ -29,8 +31,8 @@
   - `main` 上 prerelease 版本自动发 GitHub prerelease
   - 其他版本可手动触发正式发布
   - 不做 notarization / App Store Connect 公证
-  - 若仓库存在 `SPARKLE_PRIVATE_KEY`，发布后回写 `appcast.xml`
-  - 若缺少 `SPARKLE_PRIVATE_KEY`，仍会上传 GitHub Release 资产，但跳过 appcast
+  - 必须生成并提交 `appcast.xml`，否则 workflow 失败
+  - `SPARKLE_PRIVATE_KEY` 是硬依赖；没有它就不允许发出“app 内不可检测”的 release
 
 ## 本机打包现实约束
 - 仓库路径位于 iCloud Drive（`Mobile Documents/...`）。

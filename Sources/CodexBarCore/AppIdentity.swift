@@ -6,7 +6,7 @@ public enum ReleaseConfig {
     public static let appcastURL = "https://raw.githubusercontent.com/ShawnRn/CodexBar/main/appcast.xml"
     public static let releasesURL = "https://github.com/ShawnRn/CodexBar/releases"
     public static let repositoryURL = "https://github.com/ShawnRn/CodexBar"
-    public static let publicEDKey = "bjptNX8PlJbdwtszqi3/BAHV4TYyZ3UuV1EMANJ+GaY="
+    public static let publicEDKey = "pzuYYTba0w3WDEVJrFkq8DahiqHhozXlz501nZbLhT8="
     public static let changelogURL = "\(repositoryURL)/blob/main/CHANGELOG.md"
     public static let providerGuideURL = "\(repositoryURL)/blob/main/docs/provider.md"
     public static let providersURL = "\(repositoryURL)/blob/main/docs/providers.md"

@@ -5,7 +5,7 @@
 - `Sources/CodexBarCore`：共享核心逻辑（Provider 探测、缓存、日志、Sparkle/更新链路辅助、身份迁移）。涉及 bundle id、app group、keychain、更新源时优先检查这里。
 - `Tests/CodexBarTests`：XCTest 覆盖用量解析、状态探测、图标模式等；新增逻辑需补充聚焦测试。
 - `Scripts`：构建/打包辅助脚本（`package_app.sh`、`sign-and-notarize.sh`、`make_appcast.sh`、`build_icon.sh`、`compile_and_run.sh`、`release_config.sh`、`sync_localizable.py`）。
-- `.github/workflows`：CI、upstream 同步、l10n 同步、自动 release。若改动发版/更新链路，必须同步检查 workflow。
+- `.github/workflows`：macOS CI、upstream 同步、l10n 同步、自动 release。若改动发版/更新链路，必须同步检查 workflow。
 - `.agents`：仓库内代理辅助说明与检查清单；变更工作流或发布链路时要同步更新。
 - `docs`：发版说明与流程（`docs/RELEASING.md`、截图等）。根目录 zip/appcast 为构建产物，除发版外不要手改。
 
@@ -60,11 +60,12 @@
 - fork 是唯一 source of truth：`ShawnRn/CodexBar`、`https://raw.githubusercontent.com/ShawnRn/CodexBar/main/appcast.xml`。
 - Sparkle 公钥、GitHub 仓库地址、发布下载地址统一从集中配置读取；改动时同时检查脚本、Info.plist 注入和 About/Preferences 链接。
 - 当前工作流：
-  - `ci.yml`：常规校验，包含 l10n drift 检查。
-  - `upstream-sync.yml`：定时/手动同步 `steipete/CodexBar` 到机器人分支并生成 PR；`quotio` 仅开 issue 供审查。
+  - `ci.yml`：常规 macOS 校验，包含 l10n drift 检查。
+  - `release-cli.yml`：独立的 Linux CLI 手动发布流程；不参与常规 app CI / release。
+  - `upstream-sync.yml`：定时/手动同步 `steipete/CodexBar`；无冲突时直接 merge 到 `main` 并触发后续 CI / prerelease，冲突时 workflow 失败并输出冲突文件；`quotio` 仅开 issue 供审查。
   - `l10n-sync.yml`：从 `en.lproj/Localizable.strings` 同步 `zh-Hans`。
-  - `release-app.yml`：单一发布通道；`main` 上 prerelease 版本会自动发 prerelease，其他版本可手动触发正式发布。
-- 当前轻量发布 workflow 只依赖 `SPARKLE_PRIVATE_KEY`。若缺少该 secret，GitHub Release 仍会构建并上传 zip/dSYM，但会跳过 appcast 自动更新。
+  - `release-app.yml`：单一发布通道；`main` 上 prerelease 版本会自动发 prerelease，其他版本可手动触发正式发布；必须同步更新 `appcast.xml`，否则 workflow 直接失败，避免发出 app 内不可检测的“假成功” release。
+- `SPARKLE_PRIVATE_KEY` 是 release-app 的硬依赖；缺少该 secret 时禁止发布成功，因为 Sparkle 客户端无法仅靠 GitHub Release 检测更新。
 - 应用内不再暴露 stable/beta 切换；`SUPublicEDKey`、`SUFeedURL`、GitHub release 链接若不一致，会直接影响“检查更新”。
 
 ### 本地环境已知事项

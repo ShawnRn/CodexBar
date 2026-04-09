@@ -17,10 +17,9 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
 
 jobs:
-  upstream-pr:
+  upstream-sync:
     if: ${{ github.event_name != 'workflow_dispatch' || inputs.target == 'all' || inputs.target == 'upstream' }}
     runs-on: ubuntu-latest
     steps:
@@ -40,16 +39,14 @@ jobs:
           git fetch origin "${{ github.event.repository.default_branch }}"
           git fetch upstream main
 
-      - name: Prepare upstream sync branch
+      - name: Merge upstream into default branch
         id: sync
         shell: bash
         run: |
           set -euo pipefail
 
           DEFAULT_BRANCH="${{ github.event.repository.default_branch }}"
-          SYNC_BRANCH="codex/upstream-sync"
-
-          git checkout -B "$SYNC_BRANCH" "origin/${DEFAULT_BRANCH}"
+          git checkout -B "$DEFAULT_BRANCH" "origin/${DEFAULT_BRANCH}"
 
           COMMITS=$(git log --reverse --pretty=format:'- %h %s' "origin/${DEFAULT_BRANCH}..upstream/main" --no-merges || true)
           if [[ -z "$COMMITS" ]]; then
@@ -79,12 +76,11 @@ jobs:
             exit 0
           fi
 
-          git push --force-with-lease origin "$SYNC_BRANCH"
+          git push origin "HEAD:${DEFAULT_BRANCH}"
 
           {
             echo "has_changes=true"
             echo "merge_conflict=false"
-            echo "sync_branch=$SYNC_BRANCH"
             echo "commits<<EOF"
             cat /tmp/upstream-commits.md
             echo "EOF"
@@ -97,19 +93,14 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Open or update sync PR
+      - name: Summarize successful upstream sync
         if: ${{ steps.sync.outputs.has_changes == 'true' && steps.sync.outputs.merge_conflict == 'false' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
 
-          DEFAULT_BRANCH="${{ github.event.repository.default_branch }}"
-          SYNC_BRANCH="${{ steps.sync.outputs.sync_branch }}"
-          BODY_FILE=$(mktemp)
-          cat > "$BODY_FILE" <<EOF
-          Automated upstream sync PR from \`steipete/CodexBar\`.
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+          ## Upstream sync merged into \`${{ github.event.repository.default_branch }}\`
 
           ## Incoming commits
           ${{ steps.sync.outputs.commits }}
@@ -117,17 +108,6 @@ jobs:
           ## Affected providers
           ${{ steps.sync.outputs.providers }}
           EOF
-
-          EXISTING=$(gh pr list --base "$DEFAULT_BRANCH" --head "$SYNC_BRANCH" --json number --jq '.[0].number // empty')
-          if [[ -n "$EXISTING" ]]; then
-            gh pr edit "$EXISTING" --title "chore: sync upstream" --body-file "$BODY_FILE"
-          else
-            gh pr create \
-              --base "$DEFAULT_BRANCH" \
-              --head "$SYNC_BRANCH" \
-              --title "chore: sync upstream" \
-              --body-file "$BODY_FILE"
-          fi
 
       - name: Report merge conflicts
         if: ${{ steps.sync.outputs.has_changes == 'true' && steps.sync.outputs.merge_conflict == 'true' }}
@@ -143,6 +123,7 @@ jobs:
           ## Conflicted files
           ${{ steps.sync.outputs.conflicts }}
           EOF
+          exit 1
 
   quotio-monitor:
     if: ${{ github.event_name != 'workflow_dispatch' || inputs.target == 'all' || inputs.target == 'quotio' }}
