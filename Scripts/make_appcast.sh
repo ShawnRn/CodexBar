@@ -58,7 +58,26 @@ ZIP_SIZE=$(stat -f%z "$ZIP")
 DOWNLOAD_URL="${DOWNLOAD_URL_PREFIX}${ZIP_NAME}"
 PUB_DATE=$(date -R)
 SIGNATURE_BIN="$WORK_DIR/${ZIP_BASE}.sig"
-if ! openssl pkeyutl -sign -inkey "$PRIVATE_KEY_FILE" -in "$ZIP" -out "$SIGNATURE_BIN" 2>/dev/null; then
+if python3 - "$PRIVATE_KEY_FILE" "$ZIP" "$SIGNATURE_BIN" <<'PY' 2>/dev/null
+import sys
+
+try:
+    from cryptography.hazmat.primitives.serialization import load_pem_private_key
+except ModuleNotFoundError:
+    raise SystemExit(1)
+
+private_key_path, zip_path, signature_path = sys.argv[1:]
+with open(private_key_path, "rb") as fh:
+    private_key = load_pem_private_key(fh.read(), password=None)
+with open(zip_path, "rb") as fh:
+    payload = fh.read()
+signature = private_key.sign(payload)
+with open(signature_path, "wb") as fh:
+    fh.write(signature)
+PY
+then
+  :
+elif ! openssl pkeyutl -sign -inkey "$PRIVATE_KEY_FILE" -in "$ZIP" -out "$SIGNATURE_BIN" 2>/dev/null; then
   openssl pkeyutl -sign -rawin -inkey "$PRIVATE_KEY_FILE" -in "$ZIP" -out "$SIGNATURE_BIN"
 fi
 ED_SIGNATURE=$(openssl base64 -A < "$SIGNATURE_BIN")
