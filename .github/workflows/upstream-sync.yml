@@ -18,7 +18,6 @@ on:
 permissions:
   contents: write
   pull-requests: write
-  issues: write
 
 jobs:
   upstream-pr:
@@ -132,27 +131,18 @@ jobs:
 
       - name: Report merge conflicts
         if: ${{ steps.sync.outputs.has_changes == 'true' && steps.sync.outputs.merge_conflict == 'true' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
 
-          TITLE="Upstream sync conflict"
-          BODY_FILE=$(mktemp)
-          cat > "$BODY_FILE" <<EOF
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+          ## Upstream sync conflict
+
           Automated upstream sync hit merge conflicts while merging \`upstream/main\` into \`${{ github.event.repository.default_branch }}\`.
 
           ## Conflicted files
           ${{ steps.sync.outputs.conflicts }}
           EOF
-
-          ISSUE=$(gh issue list --label upstream-sync --state open --json number,title --jq '.[] | select(.title == "'"$TITLE"'") | .number' | head -n1)
-          if [[ -n "$ISSUE" ]]; then
-            gh issue edit "$ISSUE" --body-file "$BODY_FILE"
-          else
-            gh issue create --title "$TITLE" --label upstream-sync --body-file "$BODY_FILE"
-          fi
 
   quotio-monitor:
     if: ${{ github.event_name != 'workflow_dispatch' || inputs.target == 'all' || inputs.target == 'quotio' }}
@@ -187,24 +177,15 @@ jobs:
 
       - name: Open or update quotio review issue
         if: ${{ steps.quotio.outputs.has_changes == 'true' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
 
-          TITLE="Quotio changes to review"
-          BODY_FILE=$(mktemp)
-          cat > "$BODY_FILE" <<EOF
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+          ## Quotio changes to review
+
           Recent commits detected in \`nguyenphutrong/quotio\` during the last 7 days.
 
           ## Recent commits
           ${{ steps.quotio.outputs.commits }}
           EOF
-
-          ISSUE=$(gh issue list --label quotio-review --state open --json number,title --jq '.[] | select(.title == "'"$TITLE"'") | .number' | head -n1)
-          if [[ -n "$ISSUE" ]]; then
-            gh issue edit "$ISSUE" --body-file "$BODY_FILE"
-          else
-            gh issue create --title "$TITLE" --label quotio-review --body-file "$BODY_FILE"
-          fi
