@@ -10,15 +10,11 @@ struct ClaudeProviderImplementation: ProviderImplementation {
     @MainActor
     func presentation(context _: ProviderPresentationContext) -> ProviderPresentation {
         ProviderPresentation { context in
-            var versionText = context.store.version(for: context.provider) ?? L10n.tr("not detected")
+            var versionText = context.store.version(for: context.provider) ?? "not detected"
             if let parenRange = versionText.range(of: "(") {
                 versionText = versionText[..<parenRange.lowerBound].trimmingCharacters(in: .whitespaces)
             }
-            versionText = L10n.localizedDynamicValue(versionText)
-            if versionText == L10n.tr("not detected") {
-                return L10n.format("Provider detail missing: %@ %@", context.metadata.displayName, versionText)
-            }
-            return L10n.format("Provider detail: %@ %@", context.metadata.displayName, versionText)
+            return "\(context.metadata.cliName) \(versionText)"
         }
     }
 
@@ -69,9 +65,9 @@ struct ClaudeProviderImplementation: ProviderImplementation {
     @MainActor
     func settingsToggles(context: ProviderSettingsContext) -> [ProviderSettingsToggleDescriptor] {
         let subtitle = if context.settings.debugDisableKeychainAccess {
-            L10n.tr("Inactive while \"Disable Keychain access\" is enabled in Advanced.")
+            "Inactive while \"Disable Keychain access\" is enabled in Advanced."
         } else {
-            L10n.tr("Use /usr/bin/security to read Claude credentials and avoid CodexBar keychain prompts.")
+            "Use /usr/bin/security to read Claude credentials and avoid CodexBar keychain prompts."
         }
 
         let promptFreeBinding = Binding(
@@ -84,7 +80,7 @@ struct ClaudeProviderImplementation: ProviderImplementation {
         return [
             ProviderSettingsToggleDescriptor(
                 id: "claude-oauth-prompt-free-credentials",
-                title: L10n.tr("Avoid Keychain prompts (experimental)"),
+                title: "Avoid Keychain prompts",
                 subtitle: subtitle,
                 binding: promptFreeBinding,
                 statusText: nil,
@@ -124,36 +120,35 @@ struct ClaudeProviderImplementation: ProviderImplementation {
         let keychainPromptPolicyOptions: [ProviderSettingsPickerOption] = [
             ProviderSettingsPickerOption(
                 id: ClaudeOAuthKeychainPromptMode.never.rawValue,
-                title: L10n.tr("Never prompt")),
+                title: "Never prompt"),
             ProviderSettingsPickerOption(
                 id: ClaudeOAuthKeychainPromptMode.onlyOnUserAction.rawValue,
-                title: L10n.tr("Only on user action")),
+                title: "Only on user action"),
             ProviderSettingsPickerOption(
                 id: ClaudeOAuthKeychainPromptMode.always.rawValue,
-                title: L10n.tr("Always allow prompts")),
+                title: "Always allow prompts"),
         ]
         let cookieSubtitle: () -> String? = {
             ProviderCookieSourceUI.subtitle(
                 source: context.settings.claudeCookieSource,
                 keychainDisabled: context.settings.debugDisableKeychainAccess,
-                auto: L10n.tr("Automatic imports browser cookies for the web API."),
-                manual: L10n.tr("Paste a Cookie header from a claude.ai request."),
-                off: L10n.tr("Claude cookies are disabled."))
+                auto: "Automatic imports browser cookies for the web API.",
+                manual: "Paste a Cookie header from a claude.ai request.",
+                off: "Claude cookies are disabled.")
         }
         let keychainPromptPolicySubtitle: () -> String? = {
             if context.settings.debugDisableKeychainAccess {
-                return L10n.tr("Global Keychain access is disabled in Advanced, so this setting is currently inactive.")
+                return "Global Keychain access is disabled in Advanced, so this setting is currently inactive."
             }
-            return L10n.tr(
-                "Controls Claude OAuth Keychain prompts when experimental reader mode is off. " +
-                    "Choosing \"Never prompt\" can make OAuth unavailable; use Web/CLI when needed.")
+            return "Controls Claude OAuth Keychain prompts when the standard reader is active. Choosing " +
+                "\"Never prompt\" can make OAuth unavailable; use Web/CLI when needed."
         }
 
         return [
             ProviderSettingsPickerDescriptor(
                 id: "claude-usage-source",
-                title: L10n.tr("Usage source"),
-                subtitle: L10n.tr("Auto falls back to the next source if the preferred one fails."),
+                title: "Usage source",
+                subtitle: "Auto falls back to the next source if the preferred one fails.",
                 binding: usageBinding,
                 options: usageOptions,
                 isVisible: nil,
@@ -165,8 +160,8 @@ struct ClaudeProviderImplementation: ProviderImplementation {
                 }),
             ProviderSettingsPickerDescriptor(
                 id: "claude-keychain-prompt-policy",
-                title: L10n.tr("Keychain prompt policy"),
-                subtitle: L10n.tr("Applies only to the Security.framework OAuth keychain reader."),
+                title: "Keychain prompt policy",
+                subtitle: "Applies only to the Security.framework OAuth keychain reader.",
                 dynamicSubtitle: keychainPromptPolicySubtitle,
                 binding: keychainPromptPolicyBinding,
                 options: keychainPromptPolicyOptions,
@@ -175,8 +170,8 @@ struct ClaudeProviderImplementation: ProviderImplementation {
                 onChange: nil),
             ProviderSettingsPickerDescriptor(
                 id: "claude-cookie-source",
-                title: L10n.tr("Claude cookies"),
-                subtitle: L10n.tr("Automatic imports browser cookies for the web API."),
+                title: "Claude cookies",
+                subtitle: "Automatic imports browser cookies for the web API.",
                 dynamicSubtitle: cookieSubtitle,
                 binding: cookieBinding,
                 options: cookieOptions,
@@ -185,7 +180,7 @@ struct ClaudeProviderImplementation: ProviderImplementation {
                 trailingText: {
                     guard let entry = CookieHeaderCache.load(provider: .claude) else { return nil }
                     let when = entry.storedAt.relativeDescription()
-                    return L10n.format("Cached: %@ • %@", entry.sourceLabel, when)
+                    return "Cached: \(entry.sourceLabel) • \(when)"
                 }),
         ]
     }
@@ -205,7 +200,7 @@ struct ClaudeProviderImplementation: ProviderImplementation {
     @MainActor
     func appendUsageMenuEntries(context: ProviderMenuUsageContext, entries: inout [ProviderMenuEntry]) {
         if context.snapshot?.secondary == nil {
-            entries.append(.text(L10n.tr("Weekly usage unavailable for this account."), .secondary))
+            entries.append(.text("Weekly usage unavailable for this account.", .secondary))
         }
 
         if let cost = context.snapshot?.providerCost,
@@ -214,7 +209,7 @@ struct ClaudeProviderImplementation: ProviderImplementation {
         {
             let used = UsageFormatter.currencyString(cost.used, currencyCode: cost.currencyCode)
             let limit = UsageFormatter.currencyString(cost.limit, currencyCode: cost.currencyCode)
-            entries.append(.text(L10n.format("Extra usage: %@ / %@", used, limit), .primary))
+            entries.append(.text("Extra usage: \(used) / \(limit)", .primary))
         }
     }
 
@@ -223,7 +218,7 @@ struct ClaudeProviderImplementation: ProviderImplementation {
         -> (label: String, action: MenuDescriptor.MenuAction)?
     {
         guard self.shouldOpenTerminalForOAuthError(store: context.store) else { return nil }
-        return (L10n.tr("Open Terminal"), .openTerminal(command: "claude"))
+        return ("Open Terminal", .openTerminal(command: "claude"))
     }
 
     @MainActor

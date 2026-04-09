@@ -7,6 +7,8 @@ public enum UsageProvider: String, CaseIterable, Sendable, Codable {
     case claude
     case cursor
     case opencode
+    case opencodego
+    case alibaba
     case factory
     case gemini
     case antigravity
@@ -14,6 +16,7 @@ public enum UsageProvider: String, CaseIterable, Sendable, Codable {
     case zai
     case minimax
     case kimi
+    case kilo
     case kiro
     case vertexai
     case augment
@@ -24,6 +27,7 @@ public enum UsageProvider: String, CaseIterable, Sendable, Codable {
     case synthetic
     case warp
     case openrouter
+    case perplexity
 }
 
 // swiftformat:enable sortDeclarations
@@ -37,10 +41,13 @@ public enum IconStyle: Sendable, CaseIterable {
     case antigravity
     case cursor
     case opencode
+    case opencodego
+    case alibaba
     case factory
     case copilot
     case kimi
     case kimik2
+    case kilo
     case kiro
     case vertexai
     case augment
@@ -50,6 +57,7 @@ public enum IconStyle: Sendable, CaseIterable {
     case synthetic
     case warp
     case openrouter
+    case perplexity
     case combined
 }
 
@@ -130,6 +138,15 @@ public enum ProviderBrowserCookieDefaults {
     public static var defaultImportOrder: BrowserCookieImportOrder? {
         #if os(macOS)
         Browser.defaultImportOrder
+        #else
+        nil
+        #endif
+    }
+
+    /// Safari first for Cursor: active sessions often live only there, and Chromium profiles may carry stale tokens.
+    public static var cursorCookieImportOrder: BrowserCookieImportOrder? {
+        #if os(macOS)
+        [.safari] + Browser.defaultImportOrder.filter { $0 != .safari }
         #else
         nil
         #endif

@@ -135,28 +135,55 @@ jobs:
           fetch-depth: 0
 
       - name: Fetch quotio
+        id: fetch-quotio
+        shell: bash
         run: |
-          git remote add quotio https://github.com/nguyenphutrong/quotio.git || true
-          git fetch quotio main
+          set -euo pipefail
+
+          REMOTE_URL="https://github.com/nguyenphutrong/quotio.git"
+          DEFAULT_BRANCH="$(
+            git ls-remote --symref "$REMOTE_URL" HEAD \
+              | awk '/^ref:/ { sub("refs/heads/", "", $2); print $2; exit }'
+          )"
+          if [[ -z "$DEFAULT_BRANCH" ]]; then
+            DEFAULT_BRANCH="master"
+          fi
+
+          git remote add quotio "$REMOTE_URL" || true
+          if git fetch quotio "$DEFAULT_BRANCH"; then
+            echo "branch=$DEFAULT_BRANCH" >> "$GITHUB_OUTPUT"
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "branch=$DEFAULT_BRANCH" >> "$GITHUB_OUTPUT"
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Summarize quotio activity
         id: quotio
         shell: bash
         run: |
           set -euo pipefail
-          COMMITS=$(git log --pretty=format:'- %h %s' --since="7 days ago" quotio/main || true)
+
+          if [[ "${{ steps.fetch-quotio.outputs.available }}" != "true" ]]; then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          BRANCH="${{ steps.fetch-quotio.outputs.branch }}"
+          COMMITS=$(git log --pretty=format:'- %h %s' --since="7 days ago" "quotio/${BRANCH}" || true)
           if [[ -z "$COMMITS" ]]; then
             echo "has_changes=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           {
             echo "has_changes=true"
+            echo "branch=$BRANCH"
             echo "commits<<EOF"
             printf "%s\n" "$COMMITS"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Open or update quotio review issue
+      - name: Summarize quotio review activity
         if: ${{ steps.quotio.outputs.has_changes == 'true' }}
         shell: bash
         run: |
@@ -165,7 +192,7 @@ jobs:
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
           ## Quotio changes to review
 
-          Recent commits detected in \`nguyenphutrong/quotio\` during the last 7 days.
+          Recent commits detected in \`nguyenphutrong/quotio\` on \`${{ steps.quotio.outputs.branch }}\` during the last 7 days.
 
           ## Recent commits
           ${{ steps.quotio.outputs.commits }}

@@ -10,10 +10,37 @@ public struct AntigravityModelQuota: Sendable {
     public let resetTime: Date?
     public let resetDescription: String?
 
+    public init(
+        label: String,
+        modelId: String,
+        remainingFraction: Double?,
+        resetTime: Date?,
+        resetDescription: String?)
+    {
+        self.label = label
+        self.modelId = modelId
+        self.remainingFraction = remainingFraction
+        self.resetTime = resetTime
+        self.resetDescription = resetDescription
+    }
+
     public var remainingPercent: Double {
         guard let remainingFraction else { return 0 }
         return max(0, min(100, remainingFraction * 100))
     }
+}
+
+private enum AntigravityModelFamily {
+    case claude
+    case geminiPro
+    case geminiFlash
+    case unknown
+}
+
+private struct AntigravityNormalizedModel {
+    let quota: AntigravityModelQuota
+    let family: AntigravityModelFamily
+    let selectionPriority: Int?
 }
 
 public struct AntigravityStatusSnapshot: Sendable {
@@ -21,15 +48,36 @@ public struct AntigravityStatusSnapshot: Sendable {
     public let accountEmail: String?
     public let accountPlan: String?
 
+    public init(
+        modelQuotas: [AntigravityModelQuota],
+        accountEmail: String?,
+        accountPlan: String?)
+    {
+        self.modelQuotas = modelQuotas
+        self.accountEmail = accountEmail
+        self.accountPlan = accountPlan
+    }
+
     public func toUsageSnapshot() throws -> UsageSnapshot {
-        let ordered = Self.selectModels(self.modelQuotas)
-        guard let primaryQuota = ordered.first else {
-            throw AntigravityStatusProbeError.parseFailed(NSLocalizedString("No quota models available", comment: ""))
+        guard !self.modelQuotas.isEmpty else {
+            throw AntigravityStatusProbeError.parseFailed("No quota models available")
         }
 
-        let primary = Self.rateWindow(for: primaryQuota)
-        let secondary = ordered.count > 1 ? Self.rateWindow(for: ordered[1]) : nil
-        let tertiary = ordered.count > 2 ? Self.rateWindow(for: ordered[2]) : nil
+        let normalized = Self.normalizedModels(self.modelQuotas)
+        let primaryQuota = Self.representative(for: .claude, in: normalized)
+        let secondaryQuota = Self.representative(for: .geminiPro, in: normalized)
+        let tertiaryQuota = Self.representative(for: .geminiFlash, in: normalized)
+        let fallbackQuota: AntigravityModelQuota? = if primaryQuota == nil, secondaryQuota == nil,
+                                                       tertiaryQuota == nil
+        {
+            Self.fallbackRepresentative(in: normalized)
+        } else {
+            nil
+        }
+
+        let primary = (primaryQuota ?? fallbackQuota).map(Self.rateWindow(for:))
+        let secondary = secondaryQuota.map(Self.rateWindow(for:))
+        let tertiary = tertiaryQuota.map(Self.rateWindow(for:))
 
         let identity = ProviderIdentitySnapshot(
             providerID: .antigravity,
@@ -52,40 +100,99 @@ public struct AntigravityStatusSnapshot: Sendable {
             resetDescription: quota.resetDescription)
     }
 
-    private static func selectModels(_ models: [AntigravityModelQuota]) -> [AntigravityModelQuota] {
-        var ordered: [AntigravityModelQuota] = []
-        if let claude = models.first(where: { Self.isClaudeWithoutThinking($0.label) }) {
-            ordered.append(claude)
-        }
-        if let pro = models.first(where: { Self.isGeminiProLow($0.label) }),
-           !ordered.contains(where: { $0.label == pro.label })
-        {
-            ordered.append(pro)
-        }
-        if let flash = models.first(where: { Self.isGeminiFlash($0.label) }),
-           !ordered.contains(where: { $0.label == flash.label })
-        {
-            ordered.append(flash)
-        }
-        if ordered.isEmpty {
-            ordered.append(contentsOf: models.sorted(by: { $0.remainingPercent < $1.remainingPercent }))
-        }
-        return ordered
+    private static func normalizedModels(_ models: [AntigravityModelQuota]) -> [AntigravityNormalizedModel] {
+        models.map { self.normalizeModel($0) }
     }
 
-    private static func isClaudeWithoutThinking(_ label: String) -> Bool {
-        let lower = label.lowercased()
-        return lower.contains("claude") && !lower.contains("thinking")
+    private static func normalizeModel(_ quota: AntigravityModelQuota) -> AntigravityNormalizedModel {
+        let modelId = quota.modelId.lowercased()
+        let label = quota.label.lowercased()
+        let family = Self.family(forModelID: modelId, label: label)
+
+        let isLite = modelId.contains("lite") || label.contains("lite")
+        let isAutocomplete = modelId.contains("autocomplete") || label.contains("autocomplete") || modelId
+            .hasPrefix("tab_")
+        let isLowPriorityGeminiPro = modelId.contains("pro-low")
+            || (label.contains("pro") && label.contains("low"))
+
+        let selectionPriority: Int? = switch family {
+        case .claude:
+            0
+        case .geminiPro:
+            if isLowPriorityGeminiPro {
+                0
+            } else if !isLite, !isAutocomplete {
+                1
+            } else {
+                nil
+            }
+        case .geminiFlash:
+            (!isLite && !isAutocomplete) ? 0 : nil
+        case .unknown:
+            nil
+        }
+
+        return AntigravityNormalizedModel(
+            quota: quota,
+            family: family,
+            selectionPriority: selectionPriority)
     }
 
-    private static func isGeminiProLow(_ label: String) -> Bool {
-        let lower = label.lowercased()
-        return lower.contains("pro") && lower.contains("low")
+    private static func representative(
+        for family: AntigravityModelFamily,
+        in models: [AntigravityNormalizedModel]) -> AntigravityModelQuota?
+    {
+        let candidates = models.filter { $0.family == family && $0.selectionPriority != nil }
+        guard !candidates.isEmpty else { return nil }
+        return candidates.min { lhs, rhs in
+            let lhsPriority = lhs.selectionPriority ?? Int.max
+            let rhsPriority = rhs.selectionPriority ?? Int.max
+            if lhsPriority != rhsPriority {
+                return lhsPriority < rhsPriority
+            }
+            let lhsHasRemainingFraction = lhs.quota.remainingFraction != nil
+            let rhsHasRemainingFraction = rhs.quota.remainingFraction != nil
+            if lhsHasRemainingFraction != rhsHasRemainingFraction {
+                return lhsHasRemainingFraction && !rhsHasRemainingFraction
+            }
+            return lhs.quota.remainingPercent < rhs.quota.remainingPercent
+        }?.quota
     }
 
-    private static func isGeminiFlash(_ label: String) -> Bool {
-        let lower = label.lowercased()
-        return lower.contains("gemini") && lower.contains("flash")
+    private static func fallbackRepresentative(in models: [AntigravityNormalizedModel]) -> AntigravityModelQuota? {
+        guard !models.isEmpty else { return nil }
+        return models.min { lhs, rhs in
+            let lhsHasRemainingFraction = lhs.quota.remainingFraction != nil
+            let rhsHasRemainingFraction = rhs.quota.remainingFraction != nil
+            if lhsHasRemainingFraction != rhsHasRemainingFraction {
+                return lhsHasRemainingFraction && !rhsHasRemainingFraction
+            }
+            if lhs.quota.remainingPercent != rhs.quota.remainingPercent {
+                return lhs.quota.remainingPercent < rhs.quota.remainingPercent
+            }
+            return lhs.quota.label.localizedCaseInsensitiveCompare(rhs.quota.label) == .orderedAscending
+        }?.quota
+    }
+
+    private static func family(forModelID modelId: String, label: String) -> AntigravityModelFamily {
+        let modelIDFamily = Self.family(from: modelId)
+        if modelIDFamily != .unknown {
+            return modelIDFamily
+        }
+        return Self.family(from: label)
+    }
+
+    private static func family(from text: String) -> AntigravityModelFamily {
+        if text.contains("claude") {
+            return .claude
+        }
+        if text.contains("gemini"), text.contains("pro") {
+            return .geminiPro
+        }
+        if text.contains("gemini"), text.contains("flash") {
+            return .geminiFlash
+        }
+        return .unknown
     }
 }
 
@@ -108,38 +215,36 @@ public enum AntigravityStatusProbeError: LocalizedError, Sendable, Equatable {
     public var errorDescription: String? {
         switch self {
         case .notRunning:
-            NSLocalizedString("Antigravity language server not detected. Launch Antigravity and retry.", comment: "")
+            "Antigravity language server not detected. Launch Antigravity and retry."
         case .missingCSRFToken:
-            NSLocalizedString("Antigravity CSRF token not found. Restart Antigravity and retry.", comment: "")
+            "Antigravity CSRF token not found. Restart Antigravity and retry."
         case let .portDetectionFailed(message):
             Self.portDetectionDescription(message)
         case let .apiError(message):
             Self.apiErrorDescription(message)
         case let .parseFailed(message):
-            String(format: NSLocalizedString("Could not parse Antigravity quota: %@", comment: ""), message)
+            "Could not parse Antigravity quota: \(message)"
         case .timedOut:
-            NSLocalizedString("Antigravity quota request timed out.", comment: "")
+            "Antigravity quota request timed out."
         }
     }
 
     private static func portDetectionDescription(_ message: String) -> String {
         switch message {
         case "lsof not available":
-            NSLocalizedString("Antigravity port detection needs lsof. Install it, then retry.", comment: "")
+            "Antigravity port detection needs lsof. Install it, then retry."
         case "no listening ports found":
-            NSLocalizedString(
-                "Antigravity is running but not exposing ports yet. Try again in a few seconds.",
-                comment: "")
+            "Antigravity is running but not exposing ports yet. Try again in a few seconds."
         default:
-            String(format: NSLocalizedString("Antigravity port detection failed: %@", comment: ""), message)
+            "Antigravity port detection failed: \(message)"
         }
     }
 
     private static func apiErrorDescription(_ message: String) -> String {
         if message.contains("HTTP 401") || message.contains("HTTP 403") {
-            return NSLocalizedString("Antigravity session expired. Restart Antigravity and retry.", comment: "")
+            return "Antigravity session expired. Restart Antigravity and retry."
         }
-        return String(format: NSLocalizedString("Antigravity API error: %@", comment: ""), message)
+        return "Antigravity API error: \(message)"
     }
 }
 
@@ -224,7 +329,7 @@ public struct AntigravityStatusProbe: Sendable {
             throw AntigravityStatusProbeError.apiError(invalid)
         }
         guard let userStatus = response.userStatus else {
-            throw AntigravityStatusProbeError.parseFailed(NSLocalizedString("Missing userStatus", comment: ""))
+            throw AntigravityStatusProbeError.parseFailed("Missing userStatus")
         }
 
         let modelConfigs = userStatus.cascadeModelConfigData?.clientModelConfigs ?? []
@@ -245,7 +350,7 @@ public struct AntigravityStatusProbe: Sendable {
             throw AntigravityStatusProbeError.apiError(invalid)
         }
         guard let userStatus = response.userStatus else {
-            throw AntigravityStatusProbeError.parseFailed(NSLocalizedString("Missing userStatus", comment: ""))
+            throw AntigravityStatusProbeError.parseFailed("Missing userStatus")
         }
         guard let planInfo = userStatus.planStatus?.planInfo else { return nil }
         return AntigravityPlanInfoSummary(
@@ -296,7 +401,7 @@ public struct AntigravityStatusProbe: Sendable {
 
     // MARK: - Port detection
 
-    private struct ProcessInfoResult: Sendable {
+    private struct ProcessInfoResult {
         let pid: Int
         let extensionPort: Int?
         let csrfToken: String
@@ -446,7 +551,7 @@ public struct AntigravityStatusProbe: Sendable {
         let body: [String: Any]
     }
 
-    private struct RequestContext: Sendable {
+    private struct RequestContext {
         let httpsPort: Int
         let httpPort: Int?
         let csrfToken: String

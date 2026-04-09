@@ -3,6 +3,20 @@ import Foundation
 
 @MainActor
 struct MenuDescriptor {
+    struct SubmenuItem: Equatable {
+        let title: String
+        let action: MenuAction?
+        let isEnabled: Bool
+        let isChecked: Bool
+
+        init(title: String, action: MenuAction?, isEnabled: Bool = true, isChecked: Bool = false) {
+            self.title = title
+            self.action = action
+            self.isEnabled = isEnabled
+            self.isChecked = isChecked
+        }
+    }
+
     struct Section {
         var entries: [Entry]
     }
@@ -10,6 +24,7 @@ struct MenuDescriptor {
     enum Entry {
         case text(String, TextStyle)
         case action(String, MenuAction)
+        case submenu(String, String?, [SubmenuItem])
         case divider
     }
 
@@ -17,6 +32,8 @@ struct MenuDescriptor {
         case refresh = "arrow.clockwise"
         case dashboard = "chart.bar"
         case statusPage = "waveform.path.ecg"
+        case addAccount = "plus"
+        case systemAccount = "person.crop.circle"
         case switchAccount = "key"
         case openTerminal = "terminal"
         case loginToProvider = "arrow.right.square"
@@ -32,12 +49,14 @@ struct MenuDescriptor {
         case secondary
     }
 
-    enum MenuAction {
+    enum MenuAction: Equatable {
         case installUpdate
         case refresh
         case refreshAugmentSession
         case dashboard
         case statusPage
+        case addCodexAccount
+        case requestCodexSystemPromotion(UUID)
         case switchAccount(UsageProvider)
         case openTerminal(command: String)
         case loginToProvider(url: String)
@@ -54,17 +73,21 @@ struct MenuDescriptor {
         store: UsageStore,
         settings: SettingsStore,
         account: AccountInfo,
-        updateReady: Bool) -> MenuDescriptor
+        managedCodexAccountCoordinator: ManagedCodexAccountCoordinator? = nil,
+        codexAccountPromotionCoordinator: CodexAccountPromotionCoordinator? = nil,
+        updateReady: Bool,
+        includeContextualActions: Bool = true) -> MenuDescriptor
     {
         var sections: [Section] = []
 
         if let provider {
+            let fallbackAccount = store.accountInfo(for: provider)
             sections.append(Self.usageSection(for: provider, store: store, settings: settings))
             if let accountSection = Self.accountSection(
                 for: provider,
                 store: store,
                 settings: settings,
-                account: account)
+                account: fallbackAccount)
             {
                 sections.append(accountSection)
             }
@@ -77,22 +100,30 @@ struct MenuDescriptor {
             }
             if addedUsage {
                 if let accountProvider = Self.accountProviderForCombined(store: store),
+                   let fallbackAccount = Optional(store.accountInfo(for: accountProvider)),
                    let accountSection = Self.accountSection(
                        for: accountProvider,
                        store: store,
                        settings: settings,
-                       account: account)
+                       account: fallbackAccount)
                 {
                     sections.append(accountSection)
                 }
             } else {
-                sections.append(Section(entries: [.text(L10n.tr("No usage configured."), .secondary)]))
+                sections.append(Section(entries: [.text("No usage configured.", .secondary)]))
             }
         }
 
-        let actions = Self.actionsSection(for: provider, store: store, account: account)
-        if !actions.entries.isEmpty {
-            sections.append(actions)
+        if includeContextualActions {
+            let actions = Self.actionsSection(
+                for: provider,
+                store: store,
+                account: account,
+                managedCodexAccountCoordinator: managedCodexAccountCoordinator,
+                codexAccountPromotionCoordinator: codexAccountPromotionCoordinator)
+            if !actions.entries.isEmpty {
+                sections.append(actions)
+            }
         }
         sections.append(Self.metaSection(updateReady: updateReady))
 
@@ -115,8 +146,8 @@ struct MenuDescriptor {
         if let snap = store.snapshot(for: provider) {
             let resetStyle = settings.resetTimeDisplayStyle
             if let primary = snap.primary {
-                let primaryWindow = if provider == .warp {
-                    // Warp primary uses resetDescription for non-reset detail (e.g., "Unlimited", "X/Y credits").
+                let primaryWindow = if provider == .warp || provider == .kilo {
+                    // Warp/Kilo primary uses resetDescription for non-reset detail (e.g., "Unlimited", "X/Y credits").
                     // Avoid rendering it as a "Resets ..." line.
                     RateWindow(
                         usedPercent: primary.usedPercent,
@@ -128,11 +159,11 @@ struct MenuDescriptor {
                 }
                 Self.appendRateWindow(
                     entries: &entries,
-                    title: L10n.tr(meta.sessionLabel),
+                    title: meta.sessionLabel,
                     window: primaryWindow,
                     resetStyle: resetStyle,
                     showUsed: settings.usageBarsShowUsed)
-                if provider == .warp,
+                if provider == .warp || provider == .kilo,
                    let detail = primary.resetDescription?.trimmingCharacters(in: .whitespacesAndNewlines),
                    !detail.isEmpty
                 {
@@ -141,39 +172,56 @@ struct MenuDescriptor {
             }
             if let weekly = snap.secondary {
                 let weeklyResetOverride: String? = {
-                    guard provider == .warp else { return nil }
+                    guard provider == .warp || provider == .kilo || provider == .perplexity else { return nil }
                     let detail = weekly.resetDescription?.trimmingCharacters(in: .whitespacesAndNewlines)
-                    return (detail?.isEmpty ?? true) ? nil : detail
+                    guard let detail, !detail.isEmpty else { return nil }
+                    if provider == .kilo, weekly.resetsAt != nil {
+                        return nil
+                    }
+                    return detail
                 }()
                 Self.appendRateWindow(
                     entries: &entries,
-                    title: L10n.tr(meta.weeklyLabel),
+                    title: meta.weeklyLabel,
                     window: weekly,
                     resetStyle: resetStyle,
                     showUsed: settings.usageBarsShowUsed,
                     resetOverride: weeklyResetOverride)
-                if let paceSummary = UsagePaceText.weeklySummary(provider: provider, window: weekly) {
+                if provider == .kilo,
+                   weekly.resetsAt != nil,
+                   let detail = weekly.resetDescription?.trimmingCharacters(in: .whitespacesAndNewlines),
+                   !detail.isEmpty
+                {
+                    entries.append(.text(detail, .secondary))
+                }
+                if let pace = store.weeklyPace(provider: provider, window: weekly) {
+                    let paceSummary = UsagePaceText.weeklySummary(pace: pace)
                     entries.append(.text(paceSummary, .secondary))
                 }
             }
             if meta.supportsOpus, let opus = snap.tertiary {
+                // Perplexity purchased credits don't reset; show the balance as plain text.
+                let opusResetOverride: String? = provider == .perplexity
+                    ? opus.resetDescription?.trimmingCharacters(in: .whitespacesAndNewlines)
+                    : nil
                 Self.appendRateWindow(
                     entries: &entries,
-                    title: meta.opusLabel ?? L10n.tr("Sonnet"),
+                    title: meta.opusLabel ?? "Sonnet",
                     window: opus,
                     resetStyle: resetStyle,
-                    showUsed: settings.usageBarsShowUsed)
+                    showUsed: settings.usageBarsShowUsed,
+                    resetOverride: opusResetOverride)
             }
 
             if let cost = snap.providerCost {
                 if cost.currencyCode == "Quota" {
                     let used = String(format: "%.0f", cost.used)
                     let limit = String(format: "%.0f", cost.limit)
-                    entries.append(.text(L10n.format("Quota: %@ / %@", used, limit), .primary))
+                    entries.append(.text("Quota: \(used) / \(limit)", .primary))
                 }
             }
         } else {
-            entries.append(.text(L10n.tr("No usage yet"), .secondary))
+            entries.append(.text("No usage yet", .secondary))
         }
 
         let usageContext = ProviderMenuUsageContext(
@@ -216,28 +264,59 @@ struct MenuDescriptor {
         var entries: [Entry] = []
         let emailText = snapshot?.accountEmail(for: provider)?
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        let planText = snapshot?.loginMethod(for: provider)?
+        let loginMethodText = snapshot?.loginMethod(for: provider)?
             .trimmingCharacters(in: .whitespacesAndNewlines)
         let redactedEmail = PersonalInfoRedactor.redactEmail(emailText, isEnabled: hidePersonalInfo)
 
         if let emailText, !emailText.isEmpty {
-            entries.append(.text(L10n.format("Account: %@", redactedEmail), .secondary))
+            entries.append(.text("Account: \(redactedEmail)", .secondary))
         }
-        if let planText, !planText.isEmpty {
-            entries.append(.text(L10n.format("Plan: %@", AccountFormatter.plan(planText)), .secondary))
+        if provider == .kilo {
+            let kiloLogin = self.kiloLoginParts(loginMethod: loginMethodText)
+            if let pass = kiloLogin.pass {
+                entries.append(.text("Plan: \(AccountFormatter.plan(pass))", .secondary))
+            }
+            for detail in kiloLogin.details {
+                entries.append(.text("Activity: \(detail)", .secondary))
+            }
+        } else if let loginMethodText, !loginMethodText.isEmpty {
+            entries.append(.text("Plan: \(AccountFormatter.plan(loginMethodText))", .secondary))
         }
 
         if metadata.usesAccountFallback {
             if emailText?.isEmpty ?? true, let fallbackEmail = fallback.email, !fallbackEmail.isEmpty {
                 let redacted = PersonalInfoRedactor.redactEmail(fallbackEmail, isEnabled: hidePersonalInfo)
-                entries.append(.text(L10n.format("Account: %@", redacted), .secondary))
+                entries.append(.text("Account: \(redacted)", .secondary))
             }
-            if planText?.isEmpty ?? true, let fallbackPlan = fallback.plan, !fallbackPlan.isEmpty {
-                entries.append(.text(L10n.format("Plan: %@", AccountFormatter.plan(fallbackPlan)), .secondary))
+            if loginMethodText?.isEmpty ?? true, let fallbackPlan = fallback.plan, !fallbackPlan.isEmpty {
+                entries.append(.text("Plan: \(AccountFormatter.plan(fallbackPlan))", .secondary))
             }
         }
 
         return entries
+    }
+
+    private static func kiloLoginParts(loginMethod: String?) -> (pass: String?, details: [String]) {
+        guard let loginMethod else {
+            return (nil, [])
+        }
+        let parts = loginMethod
+            .components(separatedBy: "·")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        guard !parts.isEmpty else {
+            return (nil, [])
+        }
+        let first = parts[0]
+        if self.isKiloActivitySegment(first) {
+            return (nil, parts)
+        }
+        return (first, Array(parts.dropFirst()))
+    }
+
+    private static func isKiloActivitySegment(_ text: String) -> Bool {
+        let normalized = text.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return normalized.hasPrefix("auto top-up:")
     }
 
     private static func accountProviderForCombined(store: UsageStore) -> UsageProvider? {
@@ -256,17 +335,20 @@ struct MenuDescriptor {
     private static func actionsSection(
         for provider: UsageProvider?,
         store: UsageStore,
-        account: AccountInfo) -> Section
+        account: AccountInfo,
+        managedCodexAccountCoordinator: ManagedCodexAccountCoordinator?,
+        codexAccountPromotionCoordinator: CodexAccountPromotionCoordinator?) -> Section
     {
         var entries: [Entry] = []
         let targetProvider = provider ?? store.enabledProviders().first
         let metadata = targetProvider.map { store.metadata(for: $0) }
+        let fallbackAccount = targetProvider.map { store.accountInfo(for: $0) } ?? account
         let loginContext = targetProvider.map {
             ProviderMenuLoginContext(
                 provider: $0,
                 store: store,
                 settings: store.settings,
-                account: account)
+                account: fallbackAccount)
         }
 
         // Show "Add Account" if no account, "Switch Account" if logged in
@@ -280,8 +362,8 @@ struct MenuDescriptor {
                 entries.append(.action(override.label, override.action))
             } else {
                 let loginAction = self.switchAccountTarget(for: provider, store: store)
-                let hasAccount = self.hasAccount(for: provider, store: store, account: account)
-                let accountLabel = hasAccount ? L10n.tr("Switch Account...") : L10n.tr("Add Account...")
+                let hasAccount = self.hasAccount(for: provider, store: store, account: fallbackAccount)
+                let accountLabel = hasAccount ? "Switch Account..." : "Add Account..."
                 entries.append(.action(accountLabel, loginAction))
             }
         }
@@ -291,16 +373,18 @@ struct MenuDescriptor {
                 provider: targetProvider,
                 store: store,
                 settings: store.settings,
-                account: account)
+                account: fallbackAccount,
+                managedCodexAccountCoordinator: managedCodexAccountCoordinator,
+                codexAccountPromotionCoordinator: codexAccountPromotionCoordinator)
             ProviderCatalog.implementation(for: targetProvider)?
                 .appendActionMenuEntries(context: actionContext, entries: &entries)
         }
 
         if metadata?.dashboardURL != nil {
-            entries.append(.action(L10n.tr("Usage Dashboard"), .dashboard))
+            entries.append(.action("Usage Dashboard", .dashboard))
         }
         if metadata?.statusPageURL != nil || metadata?.statusLinkURL != nil {
-            entries.append(.action(L10n.tr("Status Page"), .statusPage))
+            entries.append(.action("Status Page", .statusPage))
         }
 
         if let statusLine = self.statusLine(for: provider, store: store) {
@@ -313,12 +397,12 @@ struct MenuDescriptor {
     private static func metaSection(updateReady: Bool) -> Section {
         var entries: [Entry] = []
         if updateReady {
-            entries.append(.action(L10n.tr("Update ready, restart now?"), .installUpdate))
+            entries.append(.action("Update ready, restart now?", .installUpdate))
         }
         entries.append(contentsOf: [
-            .action(L10n.tr("Settings..."), .settings),
-            .action(L10n.tr("About CodexBar"), .about),
-            .action(L10n.tr("Quit"), .quit),
+            .action("Settings...", .settings),
+            .action("About CodexBar", .about),
+            .action("Quit", .quit),
         ])
         return Section(entries: entries)
     }
@@ -371,7 +455,7 @@ struct MenuDescriptor {
     {
         let line = UsageFormatter
             .usageLine(remaining: window.remainingPercent, used: window.usedPercent, showUsed: showUsed)
-        entries.append(.text(L10n.format("%@: %@", title, line), .primary))
+        entries.append(.text("\(title): \(line)", .primary))
         if let resetOverride {
             entries.append(.text(resetOverride, .secondary))
         } else if let reset = UsageFormatter.resetLine(for: window, style: resetStyle) {
@@ -410,6 +494,9 @@ extension MenuDescriptor.MenuAction {
         case .refreshAugmentSession: MenuDescriptor.MenuActionSystemImage.refresh.rawValue
         case .dashboard: MenuDescriptor.MenuActionSystemImage.dashboard.rawValue
         case .statusPage: MenuDescriptor.MenuActionSystemImage.statusPage.rawValue
+        case .addCodexAccount: MenuDescriptor.MenuActionSystemImage.addAccount.rawValue
+        case .requestCodexSystemPromotion:
+            nil
         case .switchAccount: MenuDescriptor.MenuActionSystemImage.switchAccount.rawValue
         case .openTerminal: MenuDescriptor.MenuActionSystemImage.openTerminal.rawValue
         case .loginToProvider: MenuDescriptor.MenuActionSystemImage.loginToProvider.rawValue

@@ -11,7 +11,7 @@ struct CodexProviderImplementation: ProviderImplementation {
     @MainActor
     func presentation(context _: ProviderPresentationContext) -> ProviderPresentation {
         ProviderPresentation { context in
-            context.store.version(for: context.provider) ?? L10n.tr("not detected")
+            context.store.version(for: context.provider) ?? "not detected"
         }
     }
 
@@ -72,9 +72,20 @@ struct CodexProviderImplementation: ProviderImplementation {
 
         return [
             ProviderSettingsToggleDescriptor(
+                id: "codex-historical-tracking",
+                title: "Historical tracking",
+                subtitle: "Stores local Codex usage history (8 weeks) to personalize Pace predictions.",
+                binding: context.boolBinding(\.historicalTrackingEnabled),
+                statusText: nil,
+                actions: [],
+                isVisible: nil,
+                onChange: nil,
+                onAppDidBecomeActive: nil,
+                onAppearWhenEnabled: nil),
+            ProviderSettingsToggleDescriptor(
                 id: "codex-openai-web-extras",
-                title: L10n.tr("OpenAI web extras"),
-                subtitle: L10n.tr("Show usage breakdown, credits history, and code review via chatgpt.com."),
+                title: "OpenAI web extras",
+                subtitle: "Show usage breakdown, credits history, and code review via chatgpt.com.",
                 binding: extrasBinding,
                 statusText: nil,
                 actions: [],
@@ -109,16 +120,16 @@ struct CodexProviderImplementation: ProviderImplementation {
             ProviderCookieSourceUI.subtitle(
                 source: context.settings.codexCookieSource,
                 keychainDisabled: context.settings.debugDisableKeychainAccess,
-                auto: L10n.tr("Automatic imports browser cookies for dashboard extras."),
-                manual: L10n.tr("Paste a Cookie header from a chatgpt.com request."),
-                off: L10n.tr("Disable OpenAI dashboard cookie usage."))
+                auto: "Automatic imports browser cookies for dashboard extras.",
+                manual: "Paste a Cookie header from a chatgpt.com request.",
+                off: "Disable OpenAI dashboard cookie usage.")
         }
 
         return [
             ProviderSettingsPickerDescriptor(
                 id: "codex-usage-source",
-                title: L10n.tr("Usage source"),
-                subtitle: L10n.tr("Auto falls back to the next source if the preferred one fails."),
+                title: "Usage source",
+                subtitle: "Auto falls back to the next source if the preferred one fails.",
                 binding: usageBinding,
                 options: usageOptions,
                 isVisible: nil,
@@ -130,8 +141,8 @@ struct CodexProviderImplementation: ProviderImplementation {
                 }),
             ProviderSettingsPickerDescriptor(
                 id: "codex-cookie-source",
-                title: L10n.tr("OpenAI cookies"),
-                subtitle: L10n.tr("Automatic imports browser cookies for dashboard extras."),
+                title: "OpenAI cookies",
+                subtitle: "Automatic imports browser cookies for dashboard extras.",
                 dynamicSubtitle: cookieSubtitle,
                 binding: cookieBinding,
                 options: cookieOptions,
@@ -140,7 +151,7 @@ struct CodexProviderImplementation: ProviderImplementation {
                 trailingText: {
                     guard let entry = CookieHeaderCache.load(provider: .codex) else { return nil }
                     let when = entry.storedAt.relativeDescription()
-                    return L10n.format("Cached: %@ • %@", entry.sourceLabel, when)
+                    return "Cached: \(entry.sourceLabel) • \(when)"
                 }),
         ]
     }
@@ -153,7 +164,7 @@ struct CodexProviderImplementation: ProviderImplementation {
                 title: "",
                 subtitle: "",
                 kind: .secure,
-                placeholder: L10n.tr("Cookie: ..."),
+                placeholder: "Cookie: …",
                 binding: context.stringBinding(\.codexCookieHeader),
                 actions: [],
                 isVisible: {
@@ -170,18 +181,47 @@ struct CodexProviderImplementation: ProviderImplementation {
         else { return }
 
         if let credits = context.store.credits {
-            entries.append(.text(
-                L10n.format("Credits: %@", UsageFormatter.creditsString(from: credits.remaining)),
-                .primary))
+            entries.append(.text("Credits: \(UsageFormatter.creditsString(from: credits.remaining))", .primary))
             if let latest = credits.events.first {
-                entries.append(.text(
-                    L10n.format("Last spend: %@", UsageFormatter.creditEventSummary(latest)),
-                    .secondary))
+                entries.append(.text("Last spend: \(UsageFormatter.creditEventSummary(latest))", .secondary))
             }
         } else {
-            let hint = context.store.lastCreditsError ?? context.metadata.creditsHint
-            entries.append(.text(L10n.tr(hint), .secondary))
+            let hint = context.store.userFacingLastCreditsError ?? context.metadata.creditsHint
+            entries.append(.text(hint, .secondary))
         }
+    }
+
+    @MainActor
+    func loginMenuAction(context _: ProviderMenuLoginContext)
+        -> (label: String, action: MenuDescriptor.MenuAction)?
+    {
+        ("Add Account...", .addCodexAccount)
+    }
+
+    @MainActor
+    func appendActionMenuEntries(context: ProviderMenuActionContext, entries: inout [ProviderMenuEntry]) {
+        let projection = context.settings.codexVisibleAccountProjection
+        guard !projection.visibleAccounts.isEmpty else { return }
+
+        let isInteractionBlocked = context.codexAccountPromotionCoordinator?.isInteractionBlocked() ?? false
+
+        let submenuItems = projection.visibleAccounts.map { account in
+            let isChecked = account.id == projection.liveVisibleAccountID
+            let isEnabled = !isInteractionBlocked &&
+                !isChecked &&
+                account.storedAccountID != nil
+            let action = account.storedAccountID.map(MenuDescriptor.MenuAction.requestCodexSystemPromotion)
+            return MenuDescriptor.SubmenuItem(
+                title: account.displayName,
+                action: action,
+                isEnabled: isEnabled,
+                isChecked: isChecked)
+        }
+
+        entries.append(.submenu(
+            "System Account",
+            MenuDescriptor.MenuActionSystemImage.systemAccount.rawValue,
+            submenuItems))
     }
 
     @MainActor

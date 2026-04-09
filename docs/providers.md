@@ -1,5 +1,5 @@
 ---
-summary: "Provider data sources and parsing overview (Codex, Claude, Gemini, Antigravity, Cursor, Droid/Factory, z.ai, Copilot, Kimi, Kimi K2, Kiro, Warp, Vertex AI, Augment, Amp, Ollama, JetBrains AI, OpenRouter)."
+summary: "Provider data sources and parsing overview (Codex, Claude, Gemini, Antigravity, Cursor, OpenCode, Alibaba Coding Plan, Droid/Factory, z.ai, Copilot, Kimi, Kilo, Kimi K2, Kiro, Warp, Vertex AI, Augment, Amp, Ollama, JetBrains AI, OpenRouter)."
 read_when:
   - Adding or modifying provider fetch/parsing
   - Adjusting provider labels, toggles, or metadata
@@ -24,10 +24,12 @@ until the session is invalid, to avoid repeated Keychain prompts.
 | Antigravity | Local LSP/HTTP probe (`local`). |
 | Cursor | Web API via cookies → stored WebKit session (`web`). |
 | OpenCode | Web dashboard via cookies (`web`). |
+| Alibaba Coding Plan | Console RPC via web cookies (auto/manual) with API key fallback (`web`, `api`). |
 | Droid/Factory | Web cookies → stored tokens → local storage → WorkOS cookies (`web`). |
 | z.ai | API token (Keychain/env) → quota API (`api`). |
 | MiniMax | Manual cookie header (Keychain/env) → browser cookies (+ local storage access token) → coding plan page (HTML) with remains API fallback (`web`). |
 | Kimi | API token (JWT from `kimi-auth` cookie) → usage API (`api`). |
+| Kilo | API token (`KILO_API_KEY`) → usage API (`api`); auto falls back to CLI session auth (`cli`). |
 | Copilot | API token (device flow/env) → copilot_internal API (`api`). |
 | Kimi K2 | API key (Keychain/env) → credit endpoint (`api`). |
 | Kiro | CLI command via `kiro-cli chat --no-interactive "/usage"` (`cli`). |
@@ -73,6 +75,14 @@ until the session is invalid, to avoid repeated Keychain prompts.
 - Status: none yet.
 - Details: `docs/kimi.md`.
 
+## Kilo
+- API token from `~/.codexbar/config.json` (`providers[].apiKey`) or `KILO_API_KEY`.
+- Auto mode tries API first and falls back to CLI auth when API credentials are missing or unauthorized.
+- CLI auth source: `~/.local/share/kilo/auth.json` (`kilo.access`), typically created by `kilo login`.
+- Usage endpoint: `https://app.kilo.ai/api/trpc`.
+- Status: none yet.
+- Details: `docs/kilo.md`.
+
 ## Kimi K2
 - API key via Settings (Keychain) or `KIMI_K2_API_KEY`/`KIMI_API_KEY` env var.
 - `GET https://kimi-k2.ai/api/user/credits`.
@@ -104,6 +114,15 @@ until the session is invalid, to avoid repeated Keychain prompts.
 - `POST https://opencode.ai/_server` (workspaces + subscription usage).
 - Status: none yet.
 - Details: `docs/opencode.md`.
+
+## Alibaba Coding Plan
+- Web mode uses console RPC host (`bailian-singapore-cs.alibabacloud.com` for intl) with form payload + `sec_token`.
+- Cookie sources: browser import (`auto`) or manual header (`cookieSource: manual`).
+- API key fallback from Settings (`providerConfig.alibaba.apiKey`) or `ALIBABA_CODING_PLAN_API_KEY` env var.
+- Region hosts: international (`ap-southeast-1`) and China mainland (`cn-beijing`).
+- Overrides: `ALIBABA_CODING_PLAN_HOST` or `ALIBABA_CODING_PLAN_QUOTA_URL`.
+- Status: `https://status.aliyun.com` (link only, no auto-polling).
+- Details: `docs/alibaba-coding-plan.md`.
 
 ## Droid (Factory)
 - Web API via Factory cookies, bearer tokens, and WorkOS refresh tokens.

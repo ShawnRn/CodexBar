@@ -16,13 +16,13 @@
   - 旧身份 `com.steipete.codexbar*` 仅作读取/迁移 fallback
 
 ## GitHub Actions
-- `ci.yml`：仅跑 macOS 基础检查 + l10n drift 检查。
+- `ci.yml`：跑 macOS 基础检查 + l10n drift 检查，并保留 Linux CLI 构建/冒烟测试；macOS job 有显式超时，避免 6 小时后才被 GitHub 强制取消。
 - `release-cli.yml`：独立的 Linux CLI 手动发布流程，不参与常规 app CI / release。
 - `upstream-sync.yml`：
   - `upstream` 目标为 `steipete/CodexBar`
-  - 无冲突时直接 merge 到 `main`，随后由现有 release workflow 自动发 beta
+  - 无冲突时直接 merge 到 `main`，随后由现有 release workflow 按当前版本号自动发 prerelease / release
   - 有冲突时 workflow 失败并在 summary 输出冲突文件
-  - `quotio` 只开审查 issue，不自动合并
+  - `quotio` 只输出审查 summary，不创建 issue，不自动合并，并自动探测默认分支（当前不是 `main`）
 - `l10n-sync.yml`：
   - `en.lproj/Localizable.strings` 是唯一源
   - 缺失中文 key 自动补英文 fallback，并带 TODO 注释

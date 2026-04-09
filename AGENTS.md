@@ -25,6 +25,7 @@
 - 在 `Tests/CodexBarTests/*Tests.swift` 下新增/扩展 XCTest（`FeatureNameTests`，方法形如 `test_caseDescription`）。
 - 交付前必须运行 `swift test`（或 `./Scripts/compile_and_run.sh`），并为新增解析/格式化场景补充夹具。
 - 任意代码改动后需运行 `pnpm check` 并修复全部格式/静态检查问题。
+- macOS CI 对 headless AppKit 状态栏/菜单测试较脆弱；除非要验证 AppKit 接线本身，否则优先覆盖稳定的状态/模型层（如 `MenuDescriptor`、`ProvidersPane`、`CodexAccountsSectionState`），避免强依赖真实 `NSStatusBar` / `NSMenu` 生命周期。
 
 ## 提交与 PR 规范
 - 提交信息使用简短祈使句（例如：“Improve usage probe”“Fix icon dimming”），每次提交聚焦单一主题。
@@ -60,9 +61,9 @@
 - fork 是唯一 source of truth：`ShawnRn/CodexBar`、`https://raw.githubusercontent.com/ShawnRn/CodexBar/main/appcast.xml`。
 - Sparkle 公钥、GitHub 仓库地址、发布下载地址统一从集中配置读取；改动时同时检查脚本、Info.plist 注入和 About/Preferences 链接。
 - 当前工作流：
-  - `ci.yml`：常规 macOS 校验，包含 l10n drift 检查。
+  - `ci.yml`：macOS 基础校验 + l10n drift 检查，并保留 Linux CLI 构建/冒烟测试；macOS job 设有显式超时，避免 GitHub 6 小时后才强制取消。
   - `release-cli.yml`：独立的 Linux CLI 手动发布流程；不参与常规 app CI / release。
-  - `upstream-sync.yml`：定时/手动同步 `steipete/CodexBar`；无冲突时直接 merge 到 `main` 并触发后续 CI / prerelease，冲突时 workflow 失败并输出冲突文件；`quotio` 仅开 issue 供审查。
+  - `upstream-sync.yml`：定时/手动同步 `steipete/CodexBar`；无冲突时直接 merge 到 `main` 并触发后续 CI / prerelease，冲突时 workflow 失败并输出冲突文件；`quotio` 仅输出 summary 供审查，不创建 issue，并自动探测默认分支。
   - `l10n-sync.yml`：从 `en.lproj/Localizable.strings` 同步 `zh-Hans`。
   - `release-app.yml`：单一发布通道；`main` 上 prerelease 版本会自动发 prerelease，其他版本可手动触发正式发布；必须同步更新 `appcast.xml`，否则 workflow 直接失败，避免发出 app 内不可检测的“假成功” release。
 - `SPARKLE_PRIVATE_KEY` 是 release-app 的硬依赖；缺少该 secret 时禁止发布成功，因为 Sparkle 客户端无法仅靠 GitHub Release 检测更新。

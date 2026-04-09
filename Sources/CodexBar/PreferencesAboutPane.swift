@@ -93,7 +93,7 @@ struct AboutPane: View {
                     .foregroundStyle(.secondary)
             }
 
-            Text(L10n.tr("© 2025 Peter Steinberger. MIT License."))
+            Text(L10n.tr("© 2026 Peter Steinberger. MIT License."))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .padding(.top, 4)
